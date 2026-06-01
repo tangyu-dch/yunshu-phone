@@ -9,6 +9,7 @@ import (
 	"yunshu-phone/internal/api"
 	"yunshu-phone/internal/config"
 	"yunshu-phone/internal/core"
+	"yunshu-phone/internal/mouse"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -149,6 +150,11 @@ func (b *AppBridge) ShowWindow() {
 // SetAlwaysOnTop sets whether the window stays on top
 func (b *AppBridge) SetAlwaysOnTop(onTop bool) {
 	wailsRuntime.WindowSetAlwaysOnTop(b.ctx, onTop)
+}
+
+// ShakeWindow triggers the window shake animation (for incoming calls)
+func (b *AppBridge) ShakeWindow() {
+	mouse.ShakeWindow()
 }
 
 // --- Mouse activity ---

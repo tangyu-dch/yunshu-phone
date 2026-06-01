@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useSelector } from 'react-redux';
-import { Tabs, Modal, Typography, Space } from 'antd';
+import { Tabs, Modal, Typography, Space, Collapse } from 'antd';
 import {
   PhoneOutlined,
   UnorderedListOutlined,
   ExclamationCircleOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 import { EventsOn, EventsOff } from '../../../wailsjs/runtime/runtime';
 import { RootState } from '../../store';
@@ -12,6 +13,8 @@ import { RootState } from '../../store';
 import Header from '../header/Header';
 import PhoneCall from './components/PhoneCall';
 import CallRecords, { CallRecordsHandle } from './components/CallRecords';
+import AudioUnlockOverlay from '../common/AudioUnlockOverlay';
+import DeviceCheck from '../common/DeviceCheck';
 
 const { Text } = Typography;
 
@@ -89,6 +92,9 @@ const Index: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Audio autoplay unlock banner — fixed at top, auto-dismisses */}
+      <AudioUnlockOverlay />
+
       <Header />
 
       <div style={{ flex: 1, overflow: 'hidden', padding: '0 16px' }}>
@@ -104,6 +110,25 @@ const Index: React.FC = () => {
           items={tabItems}
           style={{ height: '100%' }}
           size="small"
+        />
+      </div>
+
+      {/* Device check — collapsible panel at the bottom */}
+      <div style={{ padding: '0 16px 8px' }}>
+        <Collapse
+          size="small"
+          items={[
+            {
+              key: 'devices',
+              label: (
+                <Space size={4}>
+                  <SettingOutlined />
+                  <span style={{ fontSize: 12 }}>音频设备检查</span>
+                </Space>
+              ),
+              children: <DeviceCheck />,
+            },
+          ]}
         />
       </div>
 

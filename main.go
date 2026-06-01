@@ -28,9 +28,10 @@ func main() {
 	// Create the core application coordinator
 	appCore := core.NewCore()
 
-	// Create bridge instances (frontend ↔ Go interface)
+	// Create bridge instances (frontend <-> Go interface)
 	appBridge := bridge.NewAppBridge(appCore)
 	callBridge := bridge.NewCallBridge(appCore)
+	updateBridge := bridge.NewUpdateBridge(appCore)
 
 	// Detect environment from env variable
 	if env := os.Getenv("BASE_ENV"); env == "production" {
@@ -56,6 +57,7 @@ func main() {
 			appCore.Init(ctx)
 			appBridge.Startup(ctx)
 			callBridge.Startup(ctx)
+			updateBridge.Startup(ctx)
 
 			// Start local HTTPS server for CRM integration
 			if err := appCore.StartLocalServer("build/certs"); err != nil {
@@ -80,6 +82,7 @@ func main() {
 		Bind: []interface{}{
 			appBridge,
 			callBridge,
+			updateBridge,
 		},
 	})
 

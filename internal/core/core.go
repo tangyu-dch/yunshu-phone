@@ -184,6 +184,11 @@ func (c *Core) setupEventHandlers() {
 		c.state.mu.Unlock()
 		c.emitToFrontend("mouse:active", nil)
 	})
+
+	// When API signals a version update is needed, notify frontend
+	c.bus.On(event.AppVersionUpdate, func(_ interface{}) {
+		c.emitToFrontend("update:check", nil)
+	})
 }
 
 func (c *Core) setupSIPCallbacks() {
@@ -235,6 +240,7 @@ func (c *Core) setupSIPCallbacks() {
 			c.state.CallNumber = displayNumber
 			c.state.IsCall = true
 			c.state.mu.Unlock()
+			mouse.ShakeWindow()
 			c.emitToFrontend("call:progress", displayNumber)
 		},
 		OnAccepted: func() {
@@ -263,6 +269,7 @@ func (c *Core) setupSIPCallbacks() {
 			c.state.CallState = "ringing"
 			c.state.CallNumber = from
 			c.state.mu.Unlock()
+			mouse.ShakeWindow()
 			c.emitToFrontend("call:incoming", from)
 		},
 	})

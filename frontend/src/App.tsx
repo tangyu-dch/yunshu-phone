@@ -6,6 +6,7 @@ import zhCN from 'antd/locale/zh_CN'
 
 import Login from './components/login/Login'
 import Index from './components/index/Index'
+import UpdateDialog from './components/common/UpdateDialog'
 import { RootState } from './store'
 import { EventsOn } from '../wailsjs/runtime/runtime'
 
@@ -25,6 +26,7 @@ function App() {
   return (
     <ConfigProvider locale={zhCN}>
       <HashRouter>
+        <UpdateDialog />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route
