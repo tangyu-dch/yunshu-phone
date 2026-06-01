@@ -1,0 +1,42 @@
+# Binaries
+build/bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Go
+*.test
+*.out
+vendor/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Wails auto-generated bindings (regenerated on build)
+frontend/wailsjs/go/
+frontend/wailsjs/runtime/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+*.log
+
+# Certificates (never commit secrets)
+build/certs/*.key
+build/certs/*.pfx

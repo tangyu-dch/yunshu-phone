@@ -1,0 +1,41 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei',
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: #fff;
+  color: #333;
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Drag region for frameless window */
+.drag-region {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}

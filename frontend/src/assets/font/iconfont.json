@@ -1,0 +1,436 @@
+{
+  "id": "4901577",
+  "name": "海豚平台",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "29776661",
+      "name": "拨号盘",
+      "font_class": "bohaopan",
+      "unicode": "e68c",
+      "unicode_decimal": 59020
+    },
+    {
+      "icon_id": "8137986",
+      "name": "渠道管理",
+      "font_class": "qudaoguanli",
+      "unicode": "e60b",
+      "unicode_decimal": 58891
+    },
+    {
+      "icon_id": "15628558",
+      "name": "费率管理",
+      "font_class": "feishuaiguanli",
+      "unicode": "e6a9",
+      "unicode_decimal": 59049
+    },
+    {
+      "icon_id": "38021903",
+      "name": "负载",
+      "font_class": "fuzai",
+      "unicode": "e674",
+      "unicode_decimal": 58996
+    },
+    {
+      "icon_id": "45558718",
+      "name": "账户管理",
+      "font_class": "zhanghuguanli",
+      "unicode": "e6bb",
+      "unicode_decimal": 59067
+    },
+    {
+      "icon_id": "40534892",
+      "name": "状态码",
+      "font_class": "zhuangtaima",
+      "unicode": "e773",
+      "unicode_decimal": 59251
+    },
+    {
+      "icon_id": "45837178",
+      "name": "停止录制",
+      "font_class": "tingzhiluzhi",
+      "unicode": "e802",
+      "unicode_decimal": 59394
+    },
+    {
+      "icon_id": "6635152",
+      "name": "下载",
+      "font_class": "xiazai-",
+      "unicode": "e650",
+      "unicode_decimal": 58960
+    },
+    {
+      "icon_id": "8094186",
+      "name": "分配",
+      "font_class": "fenpei",
+      "unicode": "e646",
+      "unicode_decimal": 58950
+    },
+    {
+      "icon_id": "36114054",
+      "name": "人工智能",
+      "font_class": "rengongzhineng",
+      "unicode": "e6e8",
+      "unicode_decimal": 59112
+    },
+    {
+      "icon_id": "37126043",
+      "name": "line_crm-1",
+      "font_class": "line_crm-1",
+      "unicode": "e626",
+      "unicode_decimal": 58918
+    },
+    {
+      "icon_id": "44501869",
+      "name": "开始录制",
+      "font_class": "kaishiluzhi",
+      "unicode": "e667",
+      "unicode_decimal": 58983
+    },
+    {
+      "icon_id": "3504879",
+      "name": "导入导出",
+      "font_class": "daorudaochu1",
+      "unicode": "e64a",
+      "unicode_decimal": 58954
+    },
+    {
+      "icon_id": "27305975",
+      "name": "白名单",
+      "font_class": "baimingdan",
+      "unicode": "e639",
+      "unicode_decimal": 58937
+    },
+    {
+      "icon_id": "27305976",
+      "name": "黑名单",
+      "font_class": "heimingdan1",
+      "unicode": "e63a",
+      "unicode_decimal": 58938
+    },
+    {
+      "icon_id": "28214382",
+      "name": "风控管理",
+      "font_class": "fengkongguanli",
+      "unicode": "e6b6",
+      "unicode_decimal": 59062
+    },
+    {
+      "icon_id": "32804165",
+      "name": "api",
+      "font_class": "api",
+      "unicode": "e66e",
+      "unicode_decimal": 58990
+    },
+    {
+      "icon_id": "25490111",
+      "name": "字段排序",
+      "font_class": "ziduanpaixu",
+      "unicode": "e679",
+      "unicode_decimal": 59001
+    },
+    {
+      "icon_id": "19818673",
+      "name": "客户管理",
+      "font_class": "kehuguanli",
+      "unicode": "e605",
+      "unicode_decimal": 58885
+    },
+    {
+      "icon_id": "38197025",
+      "name": "外呼_人工外呼",
+      "font_class": "waihu_rengongwaihu",
+      "unicode": "e604",
+      "unicode_decimal": 58884
+    },
+    {
+      "icon_id": "25964451",
+      "name": "添加",
+      "font_class": "tianjia",
+      "unicode": "e665",
+      "unicode_decimal": 58981
+    },
+    {
+      "icon_id": "14583182",
+      "name": "fuzhi",
+      "font_class": "fuzhi",
+      "unicode": "e606",
+      "unicode_decimal": 58886
+    },
+    {
+      "icon_id": "40705710",
+      "name": "修改",
+      "font_class": "xiugai",
+      "unicode": "e7d0",
+      "unicode_decimal": 59344
+    },
+    {
+      "icon_id": "40705713",
+      "name": "删除",
+      "font_class": "shanchu",
+      "unicode": "e7cd",
+      "unicode_decimal": 59341
+    },
+    {
+      "icon_id": "44705181",
+      "name": "下载任务",
+      "font_class": "xiazairenwu",
+      "unicode": "e800",
+      "unicode_decimal": 59392
+    },
+    {
+      "icon_id": "44705182",
+      "name": "消息通知",
+      "font_class": "xiaoxitongzhi",
+      "unicode": "e7ff",
+      "unicode_decimal": 59391
+    },
+    {
+      "icon_id": "20017895",
+      "name": "上传",
+      "font_class": "shangchuan",
+      "unicode": "e6f0",
+      "unicode_decimal": 59120
+    },
+    {
+      "icon_id": "28330146",
+      "name": "黑名单",
+      "font_class": "heimingdan",
+      "unicode": "e772",
+      "unicode_decimal": 59250
+    },
+    {
+      "icon_id": "31956777",
+      "name": "角色权限管理",
+      "font_class": "jiaosequanxianguanli",
+      "unicode": "e715",
+      "unicode_decimal": 59157
+    },
+    {
+      "icon_id": "1623720",
+      "name": "排序",
+      "font_class": "paixu",
+      "unicode": "e656",
+      "unicode_decimal": 58966
+    },
+    {
+      "icon_id": "25245239",
+      "name": "雷达",
+      "font_class": "leida",
+      "unicode": "e611",
+      "unicode_decimal": 58897
+    },
+    {
+      "icon_id": "44252842",
+      "name": "提示",
+      "font_class": "tishi",
+      "unicode": "e7fe",
+      "unicode_decimal": 59390
+    },
+    {
+      "icon_id": "44211337",
+      "name": "海豚电呼",
+      "font_class": "haitundianhu",
+      "unicode": "e7fd",
+      "unicode_decimal": 59389
+    },
+    {
+      "icon_id": "44209605",
+      "name": "首页",
+      "font_class": "shouye",
+      "unicode": "e7fa",
+      "unicode_decimal": 59386
+    },
+    {
+      "icon_id": "44209604",
+      "name": "上一页",
+      "font_class": "shangyiye",
+      "unicode": "e7fb",
+      "unicode_decimal": 59387
+    },
+    {
+      "icon_id": "44209603",
+      "name": "下一页",
+      "font_class": "xiayiye",
+      "unicode": "e7fc",
+      "unicode_decimal": 59388
+    },
+    {
+      "icon_id": "44209553",
+      "name": "咕咕狗",
+      "font_class": "gugugou",
+      "unicode": "e7f9",
+      "unicode_decimal": 59385
+    },
+    {
+      "icon_id": "44207733",
+      "name": "搜索",
+      "font_class": "sousuo",
+      "unicode": "e7f8",
+      "unicode_decimal": 59384
+    },
+    {
+      "icon_id": "44207713",
+      "name": "海豚商户平台logo",
+      "font_class": "haitunshanghupingtailogo",
+      "unicode": "e7f7",
+      "unicode_decimal": 59383
+    },
+    {
+      "icon_id": "31135913",
+      "name": "刷新",
+      "font_class": "shuaxin",
+      "unicode": "e752",
+      "unicode_decimal": 59218
+    },
+    {
+      "icon_id": "44207688",
+      "name": "号码管理",
+      "font_class": "haomaguanli",
+      "unicode": "e7ef",
+      "unicode_decimal": 59375
+    },
+    {
+      "icon_id": "44207687",
+      "name": "通话记录",
+      "font_class": "tonghuajilu",
+      "unicode": "e7f0",
+      "unicode_decimal": 59376
+    },
+    {
+      "icon_id": "44207686",
+      "name": "用户管理",
+      "font_class": "yonghuguanli",
+      "unicode": "e7f1",
+      "unicode_decimal": 59377
+    },
+    {
+      "icon_id": "44207685",
+      "name": "商户管理",
+      "font_class": "shanghuguanli",
+      "unicode": "e7f2",
+      "unicode_decimal": 59378
+    },
+    {
+      "icon_id": "44207684",
+      "name": "网关管理",
+      "font_class": "wangguanguanli",
+      "unicode": "e7f3",
+      "unicode_decimal": 59379
+    },
+    {
+      "icon_id": "44207683",
+      "name": "技能组",
+      "font_class": "jinengzu",
+      "unicode": "e7f4",
+      "unicode_decimal": 59380
+    },
+    {
+      "icon_id": "44207682",
+      "name": "组织架构",
+      "font_class": "zuzhijiagou",
+      "unicode": "e7f5",
+      "unicode_decimal": 59381
+    },
+    {
+      "icon_id": "44207681",
+      "name": "坐席管理",
+      "font_class": "zuoxiguanli",
+      "unicode": "e7f6",
+      "unicode_decimal": 59382
+    },
+    {
+      "icon_id": "38321586",
+      "name": "咕咕狗logo",
+      "font_class": "gugugoulogo",
+      "unicode": "e7af",
+      "unicode_decimal": 59311
+    },
+    {
+      "icon_id": "44203479",
+      "name": "海豚",
+      "font_class": "haitun",
+      "unicode": "e7ee",
+      "unicode_decimal": 59374
+    },
+    {
+      "icon_id": "44203482",
+      "name": "海豚运营平台",
+      "font_class": "haitunyunyingpingtai",
+      "unicode": "e7eb",
+      "unicode_decimal": 59371
+    },
+    {
+      "icon_id": "44203481",
+      "name": "海豚商户平台",
+      "font_class": "haitunshanghupingtai",
+      "unicode": "e7ec",
+      "unicode_decimal": 59372
+    },
+    {
+      "icon_id": "44203480",
+      "name": "运营平台",
+      "font_class": "yunyingpingtai",
+      "unicode": "e7ed",
+      "unicode_decimal": 59373
+    },
+    {
+      "icon_id": "44141813",
+      "name": "筑猎logo",
+      "font_class": "zhulielogo",
+      "unicode": "e7e9",
+      "unicode_decimal": 59369
+    },
+    {
+      "icon_id": "44141812",
+      "name": "筑猎",
+      "font_class": "zhulie",
+      "unicode": "e7ea",
+      "unicode_decimal": 59370
+    },
+    {
+      "icon_id": "44110360",
+      "name": "咕咕狗电呼",
+      "font_class": "gugugoudianhu",
+      "unicode": "e7e8",
+      "unicode_decimal": 59368
+    },
+    {
+      "icon_id": "44110348",
+      "name": "回删",
+      "font_class": "huishan",
+      "unicode": "e7e3",
+      "unicode_decimal": 59363
+    },
+    {
+      "icon_id": "44110349",
+      "name": "静音",
+      "font_class": "jingyin",
+      "unicode": "e7e4",
+      "unicode_decimal": 59364
+    },
+    {
+      "icon_id": "44110347",
+      "name": "转接",
+      "font_class": "zhuanjie",
+      "unicode": "e7e5",
+      "unicode_decimal": 59365
+    },
+    {
+      "icon_id": "44110346",
+      "name": "呼出",
+      "font_class": "huchu",
+      "unicode": "e7e6",
+      "unicode_decimal": 59366
+    },
+    {
+      "icon_id": "44110345",
+      "name": "暂停",
+      "font_class": "zanting",
+      "unicode": "e7e7",
+      "unicode_decimal": 59367
+    }
+  ]
+}

@@ -1,0 +1,178 @@
+package bridge
+
+import (
+	"context"
+	"encoding/json"
+	"log"
+	"runtime"
+
+	"yunshu-phone/internal/api"
+	"yunshu-phone/internal/config"
+	"yunshu-phone/internal/core"
+
+	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
+)
+
+// AppBridge handles authentication, configuration, and general app operations.
+// Bound to the Wails frontend as "AppBridge".
+type AppBridge struct {
+	ctx  context.Context
+	core *core.Core
+}
+
+func NewAppBridge(c *core.Core) *AppBridge {
+	return &AppBridge{core: c}
+}
+
+func (b *AppBridge) Startup(ctx context.Context) {
+	b.ctx = ctx
+}
+
+// --- Auth ---
+
+type LoginParams struct {
+	Account  string `json:"account"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type LoginResult struct {
+	UserInfo            api.UserInfo `json:"userInfo"`
+	Token               string       `json:"token"`
+	InactivityDuration  int          `json:"inactivityDurationSec"`
+	WhitelistDomains    string       `json:"whitelistDomains"`
+}
+
+// Login performs the dialpad login and initializes connections
+func (b *AppBridge) Login(params LoginParams) (*LoginResult, error) {
+	result, err := api.Login(api.LoginParams{
+		Account:  params.Account,
+		Username: params.Username,
+		Password: params.Password,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Update API client
+	api.Default().SetToken(result.Token)
+
+	// Update app state via core (use exported method)
+	b.core.SetLoginState(&result.UserInfo, result.Token, result.UserInfo.SeatNumber, result.InactivityDuration)
+
+	log.Printf("[Bridge] Login success: user=%s seat=%s", result.UserInfo.Username, result.UserInfo.SeatNumber)
+
+	return &LoginResult{
+		UserInfo:           result.UserInfo,
+		Token:              result.Token,
+		InactivityDuration: result.InactivityDuration,
+		WhitelistDomains:   result.WhitelistDomains,
+	}, nil
+}
+
+// Connect initializes SIP and WebSocket connections after login
+func (b *AppBridge) Connect() error {
+	return b.core.ConnectAll()
+}
+
+// Disconnect tears down all connections
+func (b *AppBridge) Disconnect() {
+	b.core.DisconnectAll()
+}
+
+// Logout performs logout and disconnects everything
+func (b *AppBridge) Logout() error {
+	b.core.DisconnectAll()
+	err := api.Logout()
+	api.Default().SetToken("")
+	b.core.ClearLoginState()
+	return err
+}
+
+// --- State ---
+
+// GetState returns the current app state snapshot
+func (b *AppBridge) GetState() core.AppState {
+	return b.core.GetState()
+}
+
+// GetVersion returns the app version
+func (b *AppBridge) GetVersion() string {
+	return config.Get().AppVersion
+}
+
+// GetPlatform returns the current OS platform
+func (b *AppBridge) GetPlatform() string {
+	return runtime.GOOS
+}
+
+// --- Environment ---
+
+// SetEnvironment switches between "production" and "test"
+func (b *AppBridge) SetEnvironment(env string) {
+	switch env {
+	case "production":
+		config.SetEnv(config.EnvProduction)
+	case "test":
+		config.SetEnv(config.EnvTest)
+	}
+	log.Printf("[Bridge] Environment set to: %s", env)
+}
+
+// GetEnvironment returns the current environment name
+func (b *AppBridge) GetEnvironment() string {
+	return string(config.Get().Env)
+}
+
+// --- Window control ---
+
+// MinimizeWindow minimizes the application window
+func (b *AppBridge) MinimizeWindow() {
+	wailsRuntime.WindowMinimise(b.ctx)
+}
+
+// CloseWindow closes the application (with safety checks)
+func (b *AppBridge) CloseWindow() {
+	state := b.core.GetState()
+	if state.IsCall {
+		wailsRuntime.EventsEmit(b.ctx, "app:closeBlocked", "cannot close during call")
+		return
+	}
+	wailsRuntime.Quit(b.ctx)
+}
+
+// ShowWindow brings the window to front
+func (b *AppBridge) ShowWindow() {
+	wailsRuntime.WindowShow(b.ctx)
+}
+
+// SetAlwaysOnTop sets whether the window stays on top
+func (b *AppBridge) SetAlwaysOnTop(onTop bool) {
+	wailsRuntime.WindowSetAlwaysOnTop(b.ctx, onTop)
+}
+
+// --- Mouse activity ---
+
+// ReportMouseActivity is called by the frontend on mouse movement
+func (b *AppBridge) ReportMouseActivity() {
+	b.core.ReportMouseActivity()
+}
+
+// StartMouseMonitor starts the mouse inactivity monitor
+func (b *AppBridge) StartMouseMonitor(timeoutSec int) {
+	b.core.StartMouseMonitor(timeoutSec)
+}
+
+// StartHeaderMonitor starts the agent online status monitor
+func (b *AppBridge) StartHeaderMonitor() {
+	b.core.StartHeaderMonitor()
+}
+
+// --- Helpers ---
+
+// ParseJSON is a utility for the frontend to parse JSON strings
+func (b *AppBridge) ParseJSON(jsonStr string) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := json.Unmarshal([]byte(jsonStr), &result)
+	return result, err
+}
