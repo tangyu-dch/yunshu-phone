@@ -12,7 +12,7 @@ import {
   getAudioDevices,
   testMicrophone,
   hasAudioOutputSupport,
-} from '../../utils/device'
+} from '@/utils/device'
 
 const { Text } = Typography
 

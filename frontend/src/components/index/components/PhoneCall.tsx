@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 
-import * as AppBridge from '../../../../wailsjs/go/bridge/AppBridge';
-import * as CallBridge from '../../../../wailsjs/go/bridge/CallBridge';
-import { EventsOn, EventsOff } from '../../../../wailsjs/runtime/runtime';
+import * as AppBridge from '@wailsjs/go/bridge/AppBridge';
+import * as CallBridge from '@wailsjs/go/bridge/CallBridge';
+import { EventsOn, EventsOff } from '@wailsjs/runtime/runtime';
 import {
   setCallState,
   setCallNumber,
@@ -13,9 +13,9 @@ import {
   setIsAutoCall,
   setSipStatus,
   setAgentOnline,
-} from '../../../store/appSlice';
-import { RootState } from '../../../store';
-import { callAudio } from '../../../utils/audio';
+} from '@/store/appSlice';
+import { RootState } from '@/store';
+import { callAudio } from '@/utils/audio';
 
 import DialPad from './phone/DialPad';
 import CallingView from './phone/CallingView';

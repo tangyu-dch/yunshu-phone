@@ -9,7 +9,7 @@ import Index from './components/index/Index'
 import UpdateDialog from './components/common/UpdateDialog'
 import { RootState } from './store'
 import { logout } from './store/userSlice'
-import { EventsOn } from '../wailsjs/runtime/runtime'
+import { EventsOn } from '@wailsjs/runtime/runtime'
 
 function App() {
   const dispatch = useDispatch()

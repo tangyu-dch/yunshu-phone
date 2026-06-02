@@ -6,13 +6,13 @@ import {
   UnorderedListOutlined,
   ExclamationCircleOutlined,
 } from '@ant-design/icons';
-import { EventsOn, EventsOff } from '../../../wailsjs/runtime/runtime';
-import { RootState } from '../../store';
+import { EventsOn, EventsOff } from '@wailsjs/runtime/runtime';
+import { RootState } from '@/store';
 
-import Header from '../header/Header';
+import Header from '@/components/header/Header';
 import PhoneCall from './components/PhoneCall';
 import CallRecords, { CallRecordsHandle } from './components/CallRecords';
-import AudioUnlockOverlay from '../common/AudioUnlockOverlay';
+import AudioUnlockOverlay from '@/components/common/AudioUnlockOverlay';
 
 const { Text } = Typography;
 

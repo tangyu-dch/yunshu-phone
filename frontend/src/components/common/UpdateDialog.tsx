@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Modal, Button, Progress, Typography, message } from 'antd'
 import { CloudDownloadOutlined, ReloadOutlined } from '@ant-design/icons'
-import { EventsOn, EventsOff } from '../../../wailsjs/runtime/runtime'
-import * as UpdateBridge from '../../../wailsjs/go/bridge/UpdateBridge'
+import { EventsOn, EventsOff } from '@wailsjs/runtime/runtime'
+import * as UpdateBridge from '@wailsjs/go/bridge/UpdateBridge'
 
 const { Text, Paragraph } = Typography
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Dropdown, Tooltip, Modal } from 'antd'
 import type { MenuProps } from 'antd'
-import DeviceCheck from '../common/DeviceCheck'
+import DeviceCheck from '@/components/common/DeviceCheck'
 import {
   MinusOutlined,
   ReloadOutlined,
@@ -12,10 +12,10 @@ import {
 } from '@ant-design/icons'
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
-import { RootState } from '../../store'
-import { logout } from '../../store/userSlice'
-import * as AppBridge from '../../../wailsjs/go/bridge/AppBridge'
-import { EventsOn, EventsOff } from '../../../wailsjs/runtime/runtime'
+import { RootState } from '@/store'
+import { logout } from '@/store/userSlice'
+import * as AppBridge from '@wailsjs/go/bridge/AppBridge'
+import { EventsOn, EventsOff } from '@wailsjs/runtime/runtime'
 
 type AgentStatus = 'online' | 'away'
 

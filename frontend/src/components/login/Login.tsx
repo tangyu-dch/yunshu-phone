@@ -3,9 +3,9 @@ import { Form, Input, Button, message } from 'antd'
 import { UserOutlined, LockOutlined, ShopOutlined, CheckCircleFilled, SettingOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
-import { login } from '../../store/userSlice'
-import * as AppBridge from '../../../wailsjs/go/bridge/AppBridge'
-import { config } from '../../../wailsjs/go/models'
+import { login } from '@/store/userSlice'
+import * as AppBridge from '@wailsjs/go/bridge/AppBridge'
+import { config } from '@wailsjs/go/models'
 import { Modal } from 'antd'
 
 interface LoginForm {

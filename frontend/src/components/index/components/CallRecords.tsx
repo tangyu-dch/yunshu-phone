@@ -28,8 +28,8 @@ import {
 } from '@ant-design/icons';
 import InfiniteScroll from 'react-infinite-scroll-component';
 
-import { hideNumber, formatTime } from '../../../utils/tools';
-import * as CallBridge from '../../../../wailsjs/go/bridge/CallBridge';
+import { hideNumber, formatTime } from '@/utils/tools';
+import * as CallBridge from '@wailsjs/go/bridge/CallBridge';
 
 const { Text } = Typography;
 

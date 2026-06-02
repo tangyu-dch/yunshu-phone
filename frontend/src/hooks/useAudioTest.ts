@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { callAudio } from '../utils/audio'
+import { callAudio } from '@/utils/audio'
 
 /**
  * Hook for testing audio autoplay capability and providing an unlock action.

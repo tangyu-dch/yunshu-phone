@@ -1,6 +1,6 @@
-import ringingUrl from '../assets/sounds/ringing.wav'
-import answeredUrl from '../assets/sounds/answered.wav'
-import hangupUrl from '../assets/sounds/hangup.wav'
+import ringingUrl from '@/assets/sounds/ringing.wav'
+import answeredUrl from '@/assets/sounds/answered.wav'
+import hangupUrl from '@/assets/sounds/hangup.wav'
 
 /**
  * Audio player for call tones.

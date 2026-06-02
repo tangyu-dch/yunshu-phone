@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import * as CallBridge from '../../../../../wailsjs/go/bridge/CallBridge';
+import * as CallBridge from '@wailsjs/go/bridge/CallBridge';
 import { DIAL_BUTTONS } from './types';
 
 interface InCallViewProps {

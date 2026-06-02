@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Alert, Typography } from 'antd'
 import { SoundOutlined } from '@ant-design/icons'
-import { useAudioTest } from '../../hooks/useAudioTest'
+import { useAudioTest } from '@/hooks/useAudioTest'
 
 const { Text } = Typography
 
