@@ -150,12 +150,23 @@ int pjsip_phone_init(pjsip_phone *phone,
         acc_cfg.rtp_cfg.bound_addr = pj_str("127.0.0.1");
     }
 
-    acc_cfg.cred_count = 1;
+    acc_cfg.cred_count = 2;
+    
+    // 优先尝试 ha1b 格式 (username@domain)，适配后端多租户认证
+    char auth_username[256];
+    snprintf(auth_username, sizeof(auth_username), "%s@%s", username, domain);
     acc_cfg.cred_info[0].scheme    = pj_str("digest");
     acc_cfg.cred_info[0].realm     = pj_str("*");
-    acc_cfg.cred_info[0].username  = pj_str((char *)username);
+    acc_cfg.cred_info[0].username  = pj_str(auth_username);
     acc_cfg.cred_info[0].data_type = PJSIP_CRED_DATA_PLAIN_PASSWD;
     acc_cfg.cred_info[0].data      = pj_str((char *)password);
+    
+    // 兼容原有的 ha1 格式 (username)，防止服务端不支持 ha1b
+    acc_cfg.cred_info[1].scheme    = pj_str("digest");
+    acc_cfg.cred_info[1].realm     = pj_str("*");
+    acc_cfg.cred_info[1].username  = pj_str((char *)username);
+    acc_cfg.cred_info[1].data_type = PJSIP_CRED_DATA_PLAIN_PASSWD;
+    acc_cfg.cred_info[1].data      = pj_str((char *)password);
     // acc_cfg.transport_id = tp_id;
     acc_cfg.user_data = phone;
 
