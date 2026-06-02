@@ -59,14 +59,14 @@ var envConfigs = map[Environment]*Config{
 		Env:             EnvLocal,
 		APIBaseURL:      "http://localhost:8080",
 		WSBaseURL:       "ws://localhost:8082/cti/ws",
-		SipProxy:        "127.0.0.1",
+		SipProxy:        "127.0.0.1:5060",
 		LocalServerPort: 54320,
 	},
 	EnvCustom: {
 		Env:             EnvCustom,
 		APIBaseURL:      "http://127.0.0.1:8080",
 		WSBaseURL:       "ws://127.0.0.1:8082/cti/ws",
-		SipProxy:        "127.0.0.1",
+		SipProxy:        "127.0.0.1:5060",
 		LocalServerPort: 54320,
 	},
 }

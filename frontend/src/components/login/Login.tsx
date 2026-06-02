@@ -242,7 +242,7 @@ const Login: React.FC = () => {
             label="SIP 注册地址 (IP/域名:端口)"
             rules={[{ required: true, message: '请输入 SIP 注册地址' }]}
           >
-            <Input placeholder="例如: 127.0.0.1:5060 或 sip.yunshu.local:5060" />
+            <Input placeholder="例如: 127.0.0.1:5060" />
           </Form.Item>
         </Form>
       </Modal>
