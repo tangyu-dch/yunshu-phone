@@ -265,14 +265,16 @@ in_progress（通话中）
 
 ### config — 环境配置
 
-默认运行在 `local` 本地开发环境。支持 `local`、`test` 和 `production` 环境，通过环境变量 `BASE_ENV` 或运行时的 `AppBridge.SetEnvironment()` 切换：
+默认运行在 `local` 本地开发环境。支持 `local`、`test`、`production` 和 `custom` 环境。通过环境变量 `BASE_ENV` 或运行时的 `AppBridge.SetCustomEnvironment()` 动态切换：
 
 | 环境 | API 地址 | WS 地址 |
 |------|---------|---------|
 | local (默认) | `http://localhost:8080` | `ws://localhost:8082/cti/ws` |
 | test | `https://test.api.toyfuns.top/dolphin-gateway` | `wss://test.api.toyfuns.top/dolphin-gateway/cc/ws/websocket` |
 | production | `https://dolphinapi.51zhulie.com` | `wss://dolphinapi.51zhulie.com/cc/ws/websocket` |
+| custom | 用户自定义持久化配置 | 用户自定义持久化配置 |
 
+**持久化配置**：自定义环境配置保存在用户目录的 `~/.config/yunshu-phone/config.json` 中。
 本地 CRM 服务器端口: `54320`（测试和生产共用）
 
 ### crypto — AES-ECB 加解密
@@ -367,7 +369,9 @@ type Phone interface {
 2. 配置 CGo 编译标志: `CGO_CFLAGS` 和 `CGO_LDFLAGS`
 3. 使用 `//go:build pjsip` 构建标签
 4. 实现 PJSIP 事件循环 → Go channel 桥接
-5. **SIP 认证设计**：SIP 注册服务器 (Kamailio) 直接与 GORM 的 `cc_res_extension` 表对接（`extension_number` 为用户名字段，`password` 为密码字段）。彻底摒弃了老架构中冗余的 `kamailio_subscriber` 表和 GORM `AfterSave` 同步 Hook，在源头上保证了分机凭据的一致性。
+5. **SIP 认证设计**：SIP 注册服务器 (Kamailio) 直接与 GORM 的 `cc_res_extension` 表对接。
+6. **多租户与 Proxy 支持**：支持 `sip.yunshu.local` 虚拟域名作为多租户 Domain。需要为 `pjsip_phone_init` 提供真实的 `proxy` IP 并携带 `;lr` 参数，以实现基于 IP 的真实网络注册。
+7. **CGO 开发排错指北**：如果修改了 `pjsip_bridge.h` 的函数签名（如调整参数数量），IDE 往往会因为 CGO 缓存而疯狂报错（如 `too many arguments in call to _Cfunc_xxx`）。此时必须执行 `go clean -cache` 并重启 IDE 的语言服务，切勿怀疑是代码未生效。
 
 ### server — 本地 HTTPS 服务器
 
@@ -494,8 +498,11 @@ BASE_ENV=production wails build
 1. **组件拆分：** 每个组件文件只负责一个功能，保持单一职责
 2. **状态管理：** 全局状态用 Redux，组件局部状态用 useState
 3. **事件清理：** useEffect 返回清理函数，取消 EventsOn 监听
-4. **类型安全：** 所有组件 props 和 state 都要有 TypeScript 类型定义
-5. **Wails 绑定：** 从 `wailsjs/go/` 导入，这些文件由 `wails generate` 自动生成
+4. **类型安全：** 所有组件 props 和 state 都要有 TypeScript 类型定义，且 `tsconfig.json` 必须配置 `"esModuleInterop": true` 以避免第三方包模块导入报错
+5. **Wails 绑定与别名：** 
+   - 前端代码绝对**禁止**写冗长的相对路径（如 `../../store`）。
+   - 导入 src 目录：统一使用 `@/` 别名（如 `import { login } from '@/store/userSlice'`）。
+   - 导入 wails 生成的接口：统一使用 `@wailsjs/` 别名（如 `import * as AppBridge from '@wailsjs/go/bridge/AppBridge'`）。
 6. **样式：** 使用 inline style 或 CSS 类名，避免全局样式冲突
 
 ### 添加新的 API 端点
