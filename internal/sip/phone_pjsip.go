@@ -177,7 +177,6 @@ func NewPJSIPPhone() *PJSIPPhone {
 
 func (p *PJSIPPhone) Init(params Params) error {
 	p.mu.Lock()
-	defer p.mu.Unlock()
 
 	p.params = params
 	p.initVersion++
@@ -185,14 +184,23 @@ func (p *PJSIPPhone) Init(params Params) error {
 	log.Printf("[PJSIP] Initializing with domain=%s port=%s protocol=%s user=%s",
 		params.Domain, params.Port, params.Protocol, params.Username)
 
-	// If already initialised from a previous Init() call, tear down first.
-	if p.handle != nil {
-		C.pjsip_phone_destroy(p.handle)
-		p.handle = nil
+	// If already initialised from a previous Init() call, tear down first without holding mutex.
+	oldHandle := p.handle
+	p.handle = nil
+	p.mu.Unlock()
+
+	if oldHandle != nil {
+		globalPhoneLock.Lock()
+		globalPhone = nil
+		globalPhoneLock.Unlock()
+		log.Printf("[PJSIP] Cleaning up previous PJSUA instance")
+		C.pjsip_phone_destroy(oldHandle)
 	}
 
+	p.mu.Lock()
 	p.handle = C.pjsip_phone_create()
 	if p.handle == nil {
+		p.mu.Unlock()
 		return fmt.Errorf("pjsip_phone_create failed: out of memory")
 	}
 
@@ -240,10 +248,12 @@ func (p *PJSIPPhone) Init(params Params) error {
 		globalPhone = nil
 		globalPhoneLock.Unlock()
 
+		p.mu.Unlock()
 		return fmt.Errorf("pjsip_phone_init failed with code %d", int(status))
 	}
 
 	p.setRegStatusLocked(RegConnected)
+	p.mu.Unlock()
 	return nil
 }
 
@@ -397,21 +407,24 @@ func (p *PJSIPPhone) SendDTMF(digit string) error {
 
 func (p *PJSIPPhone) Stop() error {
 	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	log.Printf("[PJSIP] Stopping")
-
-	if p.handle != nil {
-		C.pjsip_phone_destroy(p.handle)
-		p.handle = nil
+	handle := p.handle
+	if handle == nil {
+		p.mu.Unlock()
+		return nil
 	}
+	p.handle = nil
+	p.callState = CallIdle
+	p.regStatus = RegUnregistered
+	p.mu.Unlock()
 
+	// Clear global phone pointer first so trailing callback events are ignored
 	globalPhoneLock.Lock()
 	globalPhone = nil
 	globalPhoneLock.Unlock()
 
-	p.callState = CallIdle
-	p.regStatus = RegUnregistered
+	log.Printf("[PJSIP] Stopping and destroying PJSUA instance")
+	C.pjsip_phone_destroy(handle)
+
 	return nil
 }
 
