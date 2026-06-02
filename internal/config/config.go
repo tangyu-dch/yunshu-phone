@@ -24,6 +24,7 @@ type Config struct {
 	// API base URLs
 	APIBaseURL string `json:"api_base_url"`
 	WSBaseURL  string `json:"ws_base_url"`
+	SipProxy   string `json:"sip_proxy"`
 
 	// Local HTTPS server
 	LocalServerPort int `json:"local_server_port"`
@@ -44,24 +45,28 @@ var envConfigs = map[Environment]*Config{
 		Env:             EnvProduction,
 		APIBaseURL:      "https://dolphinapi.51zhulie.com",
 		WSBaseURL:       "wss://dolphinapi.51zhulie.com/cc/ws/websocket",
+		SipProxy:        "",
 		LocalServerPort: 54320,
 	},
 	EnvTest: {
 		Env:             EnvTest,
 		APIBaseURL:      "https://test.api.toyfuns.top/dolphin-gateway",
 		WSBaseURL:       "wss://test.api.toyfuns.top/dolphin-gateway/cc/ws/websocket",
+		SipProxy:        "",
 		LocalServerPort: 54320,
 	},
 	EnvLocal: {
 		Env:             EnvLocal,
 		APIBaseURL:      "http://localhost:8080",
 		WSBaseURL:       "ws://localhost:8082/cti/ws",
+		SipProxy:        "127.0.0.1",
 		LocalServerPort: 54320,
 	},
 	EnvCustom: {
 		Env:             EnvCustom,
 		APIBaseURL:      "http://127.0.0.1:8080",
 		WSBaseURL:       "ws://127.0.0.1:8082/cti/ws",
+		SipProxy:        "127.0.0.1",
 		LocalServerPort: 54320,
 	},
 }
@@ -86,11 +91,12 @@ func SetEnv(env Environment) {
 }
 
 // UpdateCustom updates the custom environment config and switches to it
-func UpdateCustom(apiURL, wsURL string) {
+func UpdateCustom(apiURL, wsURL, sipProxy string) {
 	mu.Lock()
 	if c, ok := envConfigs[EnvCustom]; ok {
 		c.APIBaseURL = apiURL
 		c.WSBaseURL = wsURL
+		c.SipProxy = sipProxy
 		instance = c
 	}
 	mu.Unlock()

@@ -41,6 +41,7 @@ const Login: React.FC = () => {
       settingsForm.setFieldsValue({
         apiUrl: cfg.api_base_url,
         wsUrl: cfg.ws_base_url,
+        sipProxy: cfg.sip_proxy,
       })
     })
   }, [form, settingsForm])
@@ -48,7 +49,7 @@ const Login: React.FC = () => {
   const handleSaveSettings = async () => {
     try {
       const values = await settingsForm.validateFields()
-      await AppBridge.SetCustomEnvironment(values.apiUrl, values.wsUrl)
+      await AppBridge.SetCustomEnvironment(values.apiUrl, values.wsUrl, values.sipProxy)
       await AppBridge.SetEnvironment('custom')
       message.success('配置已保存')
       setSettingsVisible(false)
@@ -235,6 +236,13 @@ const Login: React.FC = () => {
             rules={[{ required: true, message: '请输入 WebSocket 地址' }]}
           >
             <Input placeholder="例如: wss://dolphinapi.51zhulie.com/cc/ws/websocket" />
+          </Form.Item>
+          <Form.Item
+            name="sipProxy"
+            label="SIP 注册地址 (IP/域名)"
+            rules={[{ required: true, message: '请输入 SIP 注册地址' }]}
+          >
+            <Input placeholder="例如: 127.0.0.1 或 sip.yunshu.local" />
           </Form.Item>
         </Form>
       </Modal>

@@ -137,9 +137,9 @@ func (b *AppBridge) GetEnvironment() string {
 }
 
 // SetCustomEnvironment updates the custom environment URLs and switches to it
-func (b *AppBridge) SetCustomEnvironment(apiURL, wsURL string) {
-	config.UpdateCustom(apiURL, wsURL)
-	log.Printf("[Bridge] Custom environment set: API=%s, WS=%s", apiURL, wsURL)
+func (b *AppBridge) SetCustomEnvironment(apiURL, wsURL, sipProxy string) {
+	config.UpdateCustom(apiURL, wsURL, sipProxy)
+	log.Printf("[Bridge] Custom environment set: API=%s, WS=%s, SIP=%s", apiURL, wsURL, sipProxy)
 }
 
 // GetConfig returns the full current config

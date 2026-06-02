@@ -337,13 +337,15 @@ func (c *Core) ConnectAll() error {
 		json.Unmarshal([]byte(extInfo.ICEServers), &iceServers)
 	}
 
-	// Extract the real SIP server IP from the API Base URL to bypass Fake-IP / multi-tenancy DNS issues
-	apiURL, err := url.Parse(config.Get().APIBaseURL)
-	realProxy := ""
-	if err == nil && apiURL.Hostname() != "" {
-		realProxy = apiURL.Hostname()
-	} else {
-		realProxy = "127.0.0.1" // Fallback
+	// Extract the real SIP server IP (prioritize custom SipProxy, fallback to APIBaseURL)
+	realProxy := config.Get().SipProxy
+	if realProxy == "" {
+		apiURL, err := url.Parse(config.Get().APIBaseURL)
+		if err == nil && apiURL.Hostname() != "" {
+			realProxy = apiURL.Hostname()
+		} else {
+			realProxy = "127.0.0.1" // Fallback
+		}
 	}
 
 	sipParams := sip.Params{
