@@ -337,9 +337,15 @@ func (c *Core) ConnectAll() error {
 		json.Unmarshal([]byte(extInfo.ICEServers), &iceServers)
 	}
 
-	// Extract the real SIP server IP (prioritize custom SipProxy, fallback to APIBaseURL)
+	// Extract the real SIP server IP and Port (prioritize custom SipProxy, fallback to APIBaseURL)
 	realProxy := config.Get().SipProxy
-	if realProxy == "" {
+	sipPort := extInfo.Port
+	if realProxy != "" {
+		if h, p, err := net.SplitHostPort(realProxy); err == nil {
+			realProxy = h
+			sipPort = p
+		}
+	} else {
 		apiURL, err := url.Parse(config.Get().APIBaseURL)
 		if err == nil && apiURL.Hostname() != "" {
 			realProxy = apiURL.Hostname()
@@ -351,7 +357,7 @@ func (c *Core) ConnectAll() error {
 	sipParams := sip.Params{
 		Domain:     extInfo.Domain,
 		Proxy:      realProxy,
-		Port:       extInfo.Port,
+		Port:       sipPort,
 		Protocol:   extInfo.Protocol,
 		Username:   sipNumber,
 		Password:   sipPassword,
