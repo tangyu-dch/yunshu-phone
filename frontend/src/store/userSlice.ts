@@ -16,13 +16,7 @@ interface UserState {
   inactivityDurationSec: number
 }
 
-const initialState: UserState = (() => {
-  try {
-    const saved = localStorage.getItem('yunshu_user')
-    if (saved) return JSON.parse(saved)
-  } catch { /* ignore */ }
-  return { isLoggedIn: false, userInfo: null, token: '', inactivityDurationSec: 300 }
-})()
+const initialState: UserState = { isLoggedIn: false, userInfo: null, token: '', inactivityDurationSec: 300 }
 
 const userSlice = createSlice({
   name: 'user',
@@ -39,7 +33,7 @@ const userSlice = createSlice({
       state.isLoggedIn = false
       state.userInfo = null
       state.token = ''
-      localStorage.removeItem('yunshu_user')
+      localStorage.clear()
     },
   },
 })

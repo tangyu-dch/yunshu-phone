@@ -162,11 +162,15 @@ func (c *Core) setupEventHandlers() {
 
 	// When WS receives logout
 	c.bus.On(event.WSLogout, func(_ interface{}) {
+		c.DisconnectAll()
+		c.ClearLoginState()
 		c.emitToFrontend("app:forceLogout", nil)
 	})
 
 	// When HTTP client receives 401/4011 (token expired)
 	c.bus.On(event.AppLogout, func(_ interface{}) {
+		c.DisconnectAll()
+		c.ClearLoginState()
 		c.emitToFrontend("app:forceLogout", nil)
 	})
 
