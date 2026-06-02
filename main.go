@@ -13,6 +13,7 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/mac"
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -36,6 +37,10 @@ func main() {
 	// Detect environment from env variable
 	if env := os.Getenv("BASE_ENV"); env == "production" {
 		config.SetEnv(config.EnvProduction)
+	} else if env == "test" {
+		config.SetEnv(config.EnvTest)
+	} else {
+		config.SetEnv(config.EnvLocal)
 	}
 
 	// Wails application options
@@ -48,9 +53,14 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		BackgroundColour: &options.RGBA{R: 255, G: 255, B: 255, A: 1},
-		Frameless:        true,
+		BackgroundColour: &options.RGBA{R: 0, G: 0, B: 0, A: 0},
+		Frameless:        false,
 		AlwaysOnTop:      true,
+		Mac: &mac.Options{
+			TitleBar:             mac.TitleBarHidden(),
+			WebviewIsTransparent: true,
+			WindowIsTranslucent:  true,
+		},
 
 		OnStartup: func(ctx context.Context) {
 			log.Println("[Main] App starting up...")

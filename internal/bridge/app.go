@@ -71,6 +71,13 @@ func (b *AppBridge) Login(params LoginParams) (*LoginResult, error) {
 	}, nil
 }
 
+// RestoreSession restores the user session from frontend localStorage on startup
+func (b *AppBridge) RestoreSession(token string, userInfo api.UserInfo, inactivityDuration int) {
+	api.Default().SetToken(token)
+	b.core.SetLoginState(&userInfo, token, userInfo.SeatNumber, inactivityDuration)
+	log.Printf("[Bridge] Session restored for user=%s seat=%s", userInfo.Username, userInfo.SeatNumber)
+}
+
 // Connect initializes SIP and WebSocket connections after login
 func (b *AppBridge) Connect() error {
 	return b.core.ConnectAll()
@@ -109,13 +116,15 @@ func (b *AppBridge) GetPlatform() string {
 
 // --- Environment ---
 
-// SetEnvironment switches between "production" and "test"
+// SetEnvironment switches between "production", "test" and "local"
 func (b *AppBridge) SetEnvironment(env string) {
 	switch env {
 	case "production":
 		config.SetEnv(config.EnvProduction)
 	case "test":
 		config.SetEnv(config.EnvTest)
+	case "local":
+		config.SetEnv(config.EnvLocal)
 	}
 	log.Printf("[Bridge] Environment set to: %s", env)
 }

@@ -265,12 +265,13 @@ in_progress（通话中）
 
 ### config — 环境配置
 
-支持 `test` 和 `production` 双环境，通过环境变量 `BASE_ENV=production` 或运行时 `AppBridge.SetEnvironment()` 切换：
+默认运行在 `local` 本地开发环境。支持 `local`、`test` 和 `production` 环境，通过环境变量 `BASE_ENV` 或运行时的 `AppBridge.SetEnvironment()` 切换：
 
 | 环境 | API 地址 | WS 地址 |
 |------|---------|---------|
-| production | `https://dolphinapi.51zhulie.com` | `wss://dolphinapi.51zhulie.com/cc/ws/websocket` |
+| local (默认) | `http://localhost:8080` | `ws://localhost:8082/cti/ws` |
 | test | `https://test.api.toyfuns.top/dolphin-gateway` | `wss://test.api.toyfuns.top/dolphin-gateway/cc/ws/websocket` |
+| production | `https://dolphinapi.51zhulie.com` | `wss://dolphinapi.51zhulie.com/cc/ws/websocket` |
 
 本地 CRM 服务器端口: `54320`（测试和生产共用）
 
@@ -361,11 +362,12 @@ type Phone interface {
 
 当前实现: `PJSIPPhone`（stub，接口已就绪）
 
-**PJSIP 集成计划：**
+**PJSIP 集成计划与 SIP 认证架构：**
 1. 安装 PJSIP C 库: `brew install pjsip` (macOS) 或从源码编译
 2. 配置 CGo 编译标志: `CGO_CFLAGS` 和 `CGO_LDFLAGS`
 3. 使用 `//go:build pjsip` 构建标签
 4. 实现 PJSIP 事件循环 → Go channel 桥接
+5. **SIP 认证设计**：SIP 注册服务器 (Kamailio) 直接与 GORM 的 `cc_res_extension` 表对接（`extension_number` 为用户名字段，`password` 为密码字段）。彻底摒弃了老架构中冗余的 `kamailio_subscriber` 表和 GORM `AfterSave` 同步 Hook，在源头上保证了分机凭据的一致性。
 
 ### server — 本地 HTTPS 服务器
 

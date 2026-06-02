@@ -165,6 +165,11 @@ func (c *Core) setupEventHandlers() {
 		c.emitToFrontend("app:forceLogout", nil)
 	})
 
+	// When HTTP client receives 401/4011 (token expired)
+	c.bus.On(event.AppLogout, func(_ interface{}) {
+		c.emitToFrontend("app:forceLogout", nil)
+	})
+
 	// When WS receives system info
 	c.bus.On(event.WSSystemInfo, func(payload interface{}) {
 		c.emitToFrontend("app:systemInfo", payload)
@@ -337,28 +342,35 @@ func (c *Core) ConnectAll() error {
 	}
 	c.lastSIPParams = sipParams
 
+	log.Printf("[Core] Connecting: initializing SIP...")
 	if err := c.phone.Init(sipParams); err != nil {
 		c.updateConnStep("sip", "failed", err.Error())
 		return err
 	}
 
+	log.Printf("[Core] Connecting: registering SIP...")
 	if err := c.phone.Register(); err != nil {
 		c.updateConnStep("sip", "failed", err.Error())
 		return err
 	}
 
+	log.Printf("[Core] Connecting: waiting for SIP registered callback...")
 	// Wait for SIP registration (with timeout)
 	if !c.waitForSIPRegistered(10 * time.Second) {
 		c.updateConnStep("sip", "failed", "registration timeout")
 		return fmt.Errorf("SIP registration timeout")
 	}
+	log.Printf("[Core] Connecting: SIP registered successfully.")
 
 	// Step 3: Connect WebSocket
+	log.Printf("[Core] Connecting: starting Step 3 (WebSocket)...")
 	c.updateConnStep("websocket", "loading", "")
 	if err := c.connectWebSocket(); err != nil {
+		log.Printf("[Core] Connecting: WebSocket failed: %v", err)
 		c.updateConnStep("websocket", "failed", err.Error())
 		return err
 	}
+	log.Printf("[Core] Connecting: WebSocket connected successfully.")
 	c.updateConnStep("websocket", "success", "")
 
 	// All done
@@ -367,6 +379,15 @@ func (c *Core) ConnectAll() error {
 	c.state.mu.Unlock()
 	c.bus.Emit(event.ConnAllReady, nil)
 	c.emitToFrontend("conn:ready", nil)
+
+	// Temporary test call triggers in local/dev env
+	go func() {
+		time.Sleep(5 * time.Second)
+		log.Printf("[Test] Triggering automatic test call to 111111...")
+		if err := c.MakeCall("111111", "yunshu", nil); err != nil {
+			log.Printf("[Test] Automated test call failed: %v", err)
+		}
+	}()
 
 	return nil
 }
@@ -600,7 +621,7 @@ func (c *Core) MakeCall(phoneNumber string, platformType string, extra map[strin
 
 	// Build SIP headers
 	sipHeaders := map[string]string{
-		"X-Dolphoin-Custom-PlatformType": platformType,
+		"X-Yunshu-Custom-PlatformType": platformType,
 	}
 
 	// Initiate SIP call

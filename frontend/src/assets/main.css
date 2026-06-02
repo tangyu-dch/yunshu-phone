@@ -4,10 +4,8 @@ body {
   overflow: hidden;
   background-size: cover;
   user-select: none;
-  background-color: #fff;
+  background-color: transparent;
   margin: 0 !important;
   padding: 0 !important;
-  box-shadow:
-    0 0 20px 4px rgba(0, 0, 0, 0.25),
-    0 4px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: none;
 }

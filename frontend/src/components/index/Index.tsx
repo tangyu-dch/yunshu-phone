@@ -1,11 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useSelector } from 'react-redux';
-import { Tabs, Modal, Typography, Space, Collapse } from 'antd';
+import { Tabs, Modal, Typography, Space } from 'antd';
 import {
   PhoneOutlined,
   UnorderedListOutlined,
   ExclamationCircleOutlined,
-  SettingOutlined,
 } from '@ant-design/icons';
 import { EventsOn, EventsOff } from '../../../wailsjs/runtime/runtime';
 import { RootState } from '../../store';
@@ -14,7 +13,6 @@ import Header from '../header/Header';
 import PhoneCall from './components/PhoneCall';
 import CallRecords, { CallRecordsHandle } from './components/CallRecords';
 import AudioUnlockOverlay from '../common/AudioUnlockOverlay';
-import DeviceCheck from '../common/DeviceCheck';
 
 const { Text } = Typography;
 
@@ -91,13 +89,26 @@ const Index: React.FC = () => {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div style={styles.card}>
+      {/* Dedicated Top Draggable Titlebar Bar (Red Box area) */}
+      <div 
+        className="drag-region" 
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: '150px', // Leave 150px on the right for the interactive merchant user dropdown and controls!
+          height: '42px',
+          zIndex: 10,
+        }}
+      />
+
       {/* Audio autoplay unlock banner — fixed at top, auto-dismisses */}
       <AudioUnlockOverlay />
 
       <Header />
 
-      <div style={{ flex: 1, overflow: 'hidden', padding: '0 16px' }}>
+      <div style={{ flex: 1, overflow: 'hidden', padding: '0 16px' }} className="no-drag">
         <Tabs
           activeKey={activeTab}
           onChange={(key) => {
@@ -110,25 +121,6 @@ const Index: React.FC = () => {
           items={tabItems}
           style={{ height: '100%' }}
           size="small"
-        />
-      </div>
-
-      {/* Device check — collapsible panel at the bottom */}
-      <div style={{ padding: '0 16px 8px' }}>
-        <Collapse
-          size="small"
-          items={[
-            {
-              key: 'devices',
-              label: (
-                <Space size={4}>
-                  <SettingOutlined />
-                  <span style={{ fontSize: 12 }}>音频设备检查</span>
-                </Space>
-              ),
-              children: <DeviceCheck />,
-            },
-          ]}
         />
       </div>
 
@@ -162,6 +154,24 @@ const Index: React.FC = () => {
       </Modal>
     </div>
   );
+};
+
+const styles: Record<string, React.CSSProperties> = {
+  card: {
+    position: 'relative',
+    height: '100vh',
+    width: '100vw',
+    display: 'flex',
+    flexDirection: 'column',
+    background: 'rgba(24, 24, 27, 0.75)',
+    boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    zIndex: 2,
+    overflow: 'hidden',
+    fontFamily: "'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+  },
 };
 
 export default Index;

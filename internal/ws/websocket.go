@@ -152,8 +152,9 @@ func (c *Client) Connect() error {
 		c.mu.Unlock()
 		return fmt.Errorf("client is closed")
 	}
-	c.setStatus(StatusConnecting)
 	c.mu.Unlock()
+
+	c.setStatus(StatusConnecting)
 
 	url := c.cfg.URL + "?token=" + c.cfg.Token
 

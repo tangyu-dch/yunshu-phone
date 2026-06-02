@@ -37,6 +37,8 @@ const PhoneCall: React.FC = () => {
   const inactivityDurationSec = useSelector(
     (s: RootState) => s.user.inactivityDurationSec
   );
+  const token = useSelector((s: RootState) => s.user.token);
+  const userInfo = useSelector((s: RootState) => s.user.userInfo);
 
   const lastMouseReportRef = useRef<number>(0);
 
@@ -59,7 +61,7 @@ const PhoneCall: React.FC = () => {
 
   // ─── Manual call handler ──────────────────────────────────────────────────
   const handleManualCall = useCallback((number: string) => {
-    CallBridge.MakeCall(number, 'dolphin', {}).catch((err: unknown) => {
+    CallBridge.MakeCall(number, 'yunshu', {}).catch((err: unknown) => {
       console.error('[PhoneCall] MakeCall failed:', err);
     });
   }, []);
@@ -75,9 +77,19 @@ const PhoneCall: React.FC = () => {
   // ─── Mount / Unmount ──────────────────────────────────────────────────────
   useEffect(() => {
     // Kick off the 3-step connection process
-    AppBridge.Connect().catch((err: unknown) => {
-      console.error('[PhoneCall] Connect failed:', err);
-    });
+    const initConnect = async () => {
+      if (token && userInfo) {
+        try {
+          await AppBridge.RestoreSession(token, userInfo as any, inactivityDurationSec);
+        } catch (err) {
+          console.error('[PhoneCall] RestoreSession failed:', err);
+        }
+      }
+      AppBridge.Connect().catch((err: unknown) => {
+        console.error('[PhoneCall] Connect failed:', err);
+      });
+    };
+    initConnect();
 
     // ── Connection events ─────────────────────────────────────────────────
     EventsOn('conn:step', (steps: Array<{ name: string; status: string; error?: string }>) => {

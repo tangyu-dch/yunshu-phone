@@ -6,111 +6,6 @@ interface DialPadProps {
   disabled?: boolean;
 }
 
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '24px 16px',
-    userSelect: 'none',
-  },
-  inputWrapper: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-    width: '100%',
-    maxWidth: 280,
-  },
-  input: {
-    flex: 1,
-    fontSize: 28,
-    fontWeight: 600,
-    textAlign: 'center' as const,
-    border: 'none',
-    borderBottom: '2px solid #e0e0e0',
-    outline: 'none',
-    padding: '8px 4px',
-    letterSpacing: 2,
-    background: 'transparent',
-    color: '#1a1a1a',
-    caretColor: '#1677ff',
-  },
-  deleteBtn: {
-    width: 36,
-    height: 36,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    border: 'none',
-    background: 'transparent',
-    cursor: 'pointer',
-    fontSize: 20,
-    color: '#666',
-    borderRadius: '50%',
-    marginLeft: 8,
-    flexShrink: 0,
-    transition: 'background 0.15s',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: 12,
-    width: '100%',
-    maxWidth: 280,
-    marginBottom: 24,
-  },
-  button: {
-    width: 64,
-    height: 64,
-    borderRadius: '50%',
-    border: 'none',
-    background: '#f5f5f5',
-    fontSize: 24,
-    fontWeight: 500,
-    color: '#1a1a1a',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: '0 auto',
-    transition: 'all 0.15s ease',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-  },
-  buttonHover: {
-    background: '#e8e8e8',
-    transform: 'scale(1.05)',
-  },
-  buttonActive: {
-    background: '#d9d9d9',
-    transform: 'scale(0.95)',
-  },
-  buttonDisabled: {
-    opacity: 0.4,
-    cursor: 'not-allowed',
-  },
-  callBtn: {
-    width: '100%',
-    maxWidth: 280,
-    height: 48,
-    borderRadius: 24,
-    border: 'none',
-    background: '#1677ff',
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 600,
-    cursor: 'pointer',
-    letterSpacing: 4,
-    transition: 'all 0.2s ease',
-    boxShadow: '0 2px 8px rgba(22,119,255,0.3)',
-  },
-  callBtnDisabled: {
-    background: '#bfbfbf',
-    cursor: 'not-allowed',
-    boxShadow: 'none',
-  },
-};
-
 const DialPad: React.FC<DialPadProps> = ({ onCall, disabled = false }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
@@ -137,7 +32,6 @@ const DialPad: React.FC<DialPadProps> = ({ onCall, disabled = false }) => {
     (e: React.ClipboardEvent<HTMLInputElement>) => {
       e.preventDefault();
       const pasted = e.clipboardData.getData('text');
-      // Extract only valid dial characters
       const digits = pasted
         .split('')
         .filter(isValidChar)
@@ -152,7 +46,6 @@ const DialPad: React.FC<DialPadProps> = ({ onCall, disabled = false }) => {
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const val = e.target.value;
-      // Only keep valid dial characters
       const filtered = val.split('').filter(isValidChar).join('');
       setPhoneNumber(filtered);
     },
@@ -167,7 +60,6 @@ const DialPad: React.FC<DialPadProps> = ({ onCall, disabled = false }) => {
         if (phoneNumber && !disabled) onCall(phoneNumber);
         return;
       }
-      // Block anything that isn't a valid dial char
       if (!isValidChar(e.key) && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
       }
@@ -191,8 +83,8 @@ const DialPad: React.FC<DialPadProps> = ({ onCall, disabled = false }) => {
 
   return (
     <div style={styles.container}>
-      {/* Phone number input */}
-      <div style={styles.inputWrapper}>
+      {/* Phone number input area */}
+      <div style={styles.inputWrapper} className="dial-input-wrapper">
         <input
           ref={inputRef}
           type="text"
@@ -202,7 +94,7 @@ const DialPad: React.FC<DialPadProps> = ({ onCall, disabled = false }) => {
           onChange={handleInputChange}
           onPaste={handlePaste}
           onKeyDown={handleKeyDown}
-          placeholder="请输入号码"
+          placeholder="请输入电话号码"
           disabled={disabled}
           autoComplete="off"
         />
@@ -210,17 +102,13 @@ const DialPad: React.FC<DialPadProps> = ({ onCall, disabled = false }) => {
           <button
             style={{
               ...styles.deleteBtn,
-              ...(disabled ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
+              left: `calc(50% + ${(phoneNumber.length * 16.5) / 2}px + 4px)`,
+              ...(disabled ? { opacity: 0.3, cursor: 'not-allowed' } : {}),
             }}
             onClick={deleteLast}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = '#f0f0f0';
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
-            }}
             disabled={disabled}
             title="删除"
+            className="delete-button-slide"
           >
             ⌫
           </button>
@@ -229,20 +117,32 @@ const DialPad: React.FC<DialPadProps> = ({ onCall, disabled = false }) => {
 
       {/* Dial buttons grid */}
       <div style={styles.grid}>
-        {DIAL_BUTTONS.map((btn) => (
-          <button
-            key={btn.value}
-            style={getButtonStyle(btn.value)}
-            onClick={() => appendDigit(btn.value)}
-            onMouseEnter={() => setHoveredBtn(btn.value)}
-            onMouseLeave={() => setHoveredBtn(null)}
-            onMouseDown={() => setActiveBtn(btn.value)}
-            onMouseUp={() => setActiveBtn(null)}
-            disabled={disabled}
-          >
-            {btn.label}
-          </button>
-        ))}
+        {DIAL_BUTTONS.map((btn) => {
+          // Extra layout styling: letters beneath standard numbers (except special ones)
+          const lettersMap: Record<string, string> = {
+            '2': 'A B C', '3': 'D E F', '4': 'G H I', '5': 'J K L',
+            '6': 'M N O', '7': 'P Q R S', '8': 'T U V', '9': 'W X Y Z',
+            '0': '+',
+          };
+          const letters = lettersMap[btn.value] || '';
+
+          return (
+            <button
+              key={btn.value}
+              style={getButtonStyle(btn.value)}
+              onClick={() => appendDigit(btn.value)}
+              onMouseEnter={() => setHoveredBtn(btn.value)}
+              onMouseLeave={() => setHoveredBtn(null)}
+              onMouseDown={() => setActiveBtn(btn.value)}
+              onMouseUp={() => setActiveBtn(null)}
+              disabled={disabled}
+              className="dialpad-grid-btn"
+            >
+              <div style={styles.btnNumber}>{btn.label}</div>
+              {letters && <div style={styles.btnLetters}>{letters}</div>}
+            </button>
+          );
+        })}
       </div>
 
       {/* Call button */}
@@ -253,21 +153,182 @@ const DialPad: React.FC<DialPadProps> = ({ onCall, disabled = false }) => {
         }}
         onClick={handleCall}
         disabled={!phoneNumber || disabled}
-        onMouseEnter={(e) => {
-          if (phoneNumber && !disabled) {
-            (e.currentTarget as HTMLButtonElement).style.background = '#4096ff';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (phoneNumber && !disabled) {
-            (e.currentTarget as HTMLButtonElement).style.background = '#1677ff';
-          }
-        }}
+        className="dialpad-call-btn"
       >
+        <span style={styles.callIcon}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-2.2 2.2a15.045 15.045 0 0 1-6.59-6.59l2.2-2.2c.28-.28.36-.67.25-1.02A11.36 11.36 0 0 1 8.5 3.7c0-.55-.45-1-1-1H3.5c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.5c0-.55-.45-1-1-1z"/>
+          </svg>
+        </span>
         呼叫
       </button>
     </div>
   );
 };
+
+const styles: Record<string, React.CSSProperties> = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '20px 16px',
+    userSelect: 'none',
+    fontFamily: "'Outfit', 'Inter', sans-serif",
+  },
+  inputWrapper: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    width: '100%',
+    maxWidth: 260,
+    borderBottom: '2px solid rgba(255, 255, 255, 0.15)',
+    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+    padding: '4px 0',
+    position: 'relative',
+  },
+  input: {
+    flex: 1,
+    fontSize: 26,
+    fontWeight: 700,
+    textAlign: 'center' as const,
+    border: 'none',
+    outline: 'none',
+    background: 'transparent',
+    color: '#ffffff',
+    caretColor: '#6366f1',
+    letterSpacing: 1.5,
+    fontVariantNumeric: 'tabular-nums',
+  },
+  deleteBtn: {
+    width: 32,
+    height: 32,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: 'none',
+    background: 'transparent',
+    cursor: 'pointer',
+    fontSize: 18,
+    color: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: '50%',
+    position: 'absolute',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    flexShrink: 0,
+    transition: 'all 0.15s',
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '14px 20px',
+    width: '100%',
+    maxWidth: 270,
+    marginBottom: 24,
+  },
+  button: {
+    width: 58,
+    height: 58,
+    borderRadius: '50%',
+    border: 'none',
+    background: 'rgba(255, 255, 255, 0.05)',
+    cursor: 'pointer',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: '0 auto',
+    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+    transition: 'all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.1)',
+  },
+  btnNumber: {
+    fontSize: 22,
+    fontWeight: 600,
+    color: '#ffffff',
+    lineHeight: 1.1,
+  },
+  btnLetters: {
+    fontSize: 8,
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontWeight: 500,
+    marginTop: 1,
+    letterSpacing: 0.5,
+  },
+  buttonHover: {
+    background: 'rgba(255, 255, 255, 0.12)',
+    transform: 'scale(1.06)',
+  },
+  buttonActive: {
+    background: 'rgba(255, 255, 255, 0.2)',
+    transform: 'scale(0.93)',
+  },
+  buttonDisabled: {
+    opacity: 0.25,
+    cursor: 'not-allowed',
+    boxShadow: 'none',
+  },
+  callBtn: {
+    width: '100%',
+    maxWidth: 240,
+    height: 48,
+    borderRadius: 24,
+    border: 'none',
+    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 700,
+    cursor: 'pointer',
+    letterSpacing: 6,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)',
+  },
+  callIcon: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: -4,
+  },
+  callBtnDisabled: {
+    background: 'rgba(255, 255, 255, 0.08)',
+    cursor: 'not-allowed',
+    boxShadow: 'none',
+    color: 'rgba(255, 255, 255, 0.25)',
+  },
+};
+
+// Add dynamic head styles for high-fidelity UI states
+const styleSheet = document.createElement('style');
+styleSheet.textContent = `
+.dial-input-wrapper:focus-within {
+  border-color: #6366f1 !important;
+  box-shadow: 0 1px 0 #6366f1 !important;
+}
+.dial-input-wrapper input::placeholder {
+  color: rgba(255, 255, 255, 0.3) !important;
+  font-size: 18px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0px !important;
+}
+.delete-button-slide:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #f87171 !important;
+}
+.dialpad-grid-btn:hover .btnNumber {
+  color: #a5b4fc !important;
+}
+.dialpad-call-btn:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45) !important;
+  opacity: 0.95;
+}
+.dialpad-call-btn:active:not(:disabled) {
+  transform: translateY(0.5px) !important;
+}
+`;
+document.head.appendChild(styleSheet);
 
 export default DialPad;

@@ -47,7 +47,7 @@ func (c *Client) SetToken(token string) {
 	c.token = token
 }
 
-// SetVersion sets the dolphin version header
+// SetVersion sets the yunshu version header
 func (c *Client) SetVersion(version string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -91,10 +91,11 @@ func (c *Client) Do(method, path string, body interface{}) (*APIResponse, error)
 	req.Header.Set("Content-Type", "application/json")
 	c.mu.RLock()
 	if c.token != "" {
-		req.Header.Set("Authorization", c.token)
+		req.Header.Set("Authorization", "Bearer "+c.token)
+		req.Header.Set("X-Token", c.token)
 	}
 	if c.version != "" {
-		req.Header.Set("dolphin_version", c.version)
+		req.Header.Set("yunshu_version", c.version)
 	}
 	c.mu.RUnlock()
 
@@ -112,6 +113,11 @@ func (c *Client) Do(method, path string, body interface{}) (*APIResponse, error)
 	var apiResp APIResponse
 	if err := json.Unmarshal(respBody, &apiResp); err != nil {
 		return nil, fmt.Errorf("parse response: %w (body: %s)", err, string(respBody))
+	}
+
+	// Map success code 0 (returned by local backend) to 200 (expected by client)
+	if apiResp.Code == 0 {
+		apiResp.Code = 200
 	}
 
 	// Handle special status codes

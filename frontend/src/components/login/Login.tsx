@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Form, Input, Button, message } from 'antd'
-import { UserOutlined, LockOutlined, ShopOutlined } from '@ant-design/icons'
+import { UserOutlined, LockOutlined, ShopOutlined, CheckCircleFilled } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { login } from '../../store/userSlice'
@@ -83,12 +83,31 @@ const Login: React.FC = () => {
 
   return (
     <div style={styles.wrapper}>
+      {/* Background aurora lights */}
+      <div style={styles.aurora1} />
+      <div style={styles.aurora2} />
+
       <div style={styles.card}>
+        {/* Dedicated Top Draggable Titlebar Bar (Red Box area) */}
+        <div 
+          className="drag-region" 
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '42px',
+            zIndex: 10,
+          }}
+        />
+
         {/* Logo and title */}
         <div style={styles.header}>
-          <i className="iconfont icon-haitundianhu" style={styles.logo} />
+          <div style={styles.logoOuter}>
+            <i className="iconfont icon-huchu" style={styles.logo} />
+          </div>
           <h1 style={styles.title}>云枢</h1>
-          <p style={styles.subtitle}>智能外呼系统</p>
+          <p style={styles.subtitle}>智能外呼系统 • 桌面版</p>
         </div>
 
         {/* Login form */}
@@ -98,36 +117,43 @@ const Login: React.FC = () => {
           layout="vertical"
           size="large"
           style={styles.form}
+          className="no-drag"
         >
           <Form.Item
             name="account"
             rules={[{ required: true, message: '请输入商户账号' }]}
+            style={{ marginBottom: 18 }}
           >
             <Input
-              prefix={<ShopOutlined style={{ color: '#bfbfbf' }} />}
+              prefix={<ShopOutlined style={{ color: 'rgba(255, 255, 255, 0.45)' }} />}
               placeholder="商户账号"
               allowClear
+              className="glass-input"
             />
           </Form.Item>
 
           <Form.Item
             name="username"
             rules={[{ required: true, message: '请输入用户名' }]}
+            style={{ marginBottom: 18 }}
           >
             <Input
-              prefix={<UserOutlined style={{ color: '#bfbfbf' }} />}
+              prefix={<UserOutlined style={{ color: 'rgba(255, 255, 255, 0.45)' }} />}
               placeholder="用户名"
               allowClear
+              className="glass-input"
             />
           </Form.Item>
 
           <Form.Item
             name="password"
             rules={[{ required: true, message: '请输入密码' }]}
+            style={{ marginBottom: 26 }}
           >
             <Input.Password
-              prefix={<LockOutlined style={{ color: '#bfbfbf' }} />}
+              prefix={<LockOutlined style={{ color: 'rgba(255, 255, 255, 0.45)' }} />}
               placeholder="密码"
+              className="glass-input"
             />
           </Form.Item>
 
@@ -138,11 +164,18 @@ const Login: React.FC = () => {
               loading={loading}
               block
               style={styles.submitBtn}
+              className="login-submit-btn"
             >
               登 录
             </Button>
           </Form.Item>
         </Form>
+
+        {/* Brand signature */}
+        <div style={styles.footer}>
+          <CheckCircleFilled style={{ color: '#10b981', fontSize: 11, marginRight: 4 }} />
+          <span>VoIP 网络加密安全连通已启用</span>
+        </div>
       </div>
     </div>
   )
@@ -150,53 +183,161 @@ const Login: React.FC = () => {
 
 const styles: Record<string, React.CSSProperties> = {
   wrapper: {
+    position: 'relative',
     height: '100vh',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    background: 'transparent',
+    overflow: 'hidden',
+    fontFamily: "'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+  },
+  aurora1: {
+    position: 'absolute',
+    width: 250,
+    height: 250,
+    background: 'radial-gradient(circle, rgba(99, 102, 241, 0.45) 0%, rgba(99, 102, 241, 0) 70%)',
+    top: '10%',
+    left: '10%',
+    zIndex: 1,
+    filter: 'blur(30px)',
+    animation: 'pulse-slow 8s infinite alternate',
+  },
+  aurora2: {
+    position: 'absolute',
+    width: 300,
+    height: 300,
+    background: 'radial-gradient(circle, rgba(236, 72, 153, 0.3) 0%, rgba(236, 72, 153, 0) 70%)',
+    bottom: '10%',
+    right: '5%',
+    zIndex: 1,
+    filter: 'blur(40px)',
+    animation: 'pulse-slow 10s infinite alternate-reverse',
   },
   card: {
-    width: 380,
-    padding: '40px 36px 32px',
-    background: '#fff',
-    borderRadius: 12,
-    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.18)',
+    position: 'relative',
+    height: '100vh',
+    width: '100vw',
+    padding: '36px 28px 24px',
+    background: 'rgba(24, 24, 27, 0.75)', // Luxury glassmorphism translucent charcoal
+    boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    zIndex: 2,
+    textAlign: 'center',
   },
   header: {
-    textAlign: 'center' as const,
-    marginBottom: 32,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  logoOuter: {
+    width: 68,
+    height: 68,
+    borderRadius: '50%',
+    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(79, 70, 229, 0.2) 100%)',
+    border: '1px solid rgba(99, 102, 241, 0.35)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+    boxShadow: '0 0 20px rgba(99, 102, 241, 0.25)',
   },
   logo: {
-    fontSize: 48,
-    color: '#667eea',
+    fontSize: 34,
+    background: 'linear-gradient(135deg, #a5b4fc 0%, #818cf8 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
     display: 'block',
-    marginBottom: 12,
   },
   title: {
     fontSize: 24,
-    fontWeight: 600,
-    color: '#1a1a2e',
+    fontWeight: 700,
+    color: '#ffffff',
     margin: 0,
     letterSpacing: 2,
+    lineHeight: 1.2,
   },
   subtitle: {
-    fontSize: 13,
-    color: '#999',
-    marginTop: 6,
+    fontSize: 12,
+    color: '#a1a1aa',
+    marginTop: 5,
     marginBottom: 0,
+    fontWeight: 400,
+    letterSpacing: 0.5,
   },
   form: {
-    marginTop: 8,
+    marginTop: 6,
+    textAlign: 'left' as const,
   },
   submitBtn: {
-    height: 44,
-    fontSize: 16,
-    fontWeight: 500,
-    borderRadius: 8,
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    height: 42,
+    fontSize: 15,
+    fontWeight: 600,
+    borderRadius: 10,
+    background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
     border: 'none',
+    boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4)',
+    color: '#ffffff',
+    cursor: 'pointer',
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+  },
+  footer: {
+    marginTop: 20,
+    fontSize: 10,
+    color: '#71717a',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    letterSpacing: 0.2,
   },
 }
+
+// Inject keyframes and global styles for input overlays in document head
+const styleSheet = document.createElement('style');
+styleSheet.textContent = `
+@keyframes pulse-slow {
+  0% { transform: scale(1) translate(0, 0); opacity: 0.8; }
+  100% { transform: scale(1.15) translate(10px, 10px); opacity: 0.5; }
+}
+.glass-input.ant-input-wrapper,
+.glass-input.ant-input-affix-wrapper {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 10px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.glass-input.ant-input-affix-wrapper-focused,
+.glass-input.ant-input-affix-wrapper:focus,
+.glass-input.ant-input-affix-wrapper:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(99, 102, 241, 0.6) !important;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.2) !important;
+}
+.glass-input input {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+.glass-input input::placeholder {
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+.glass-input .ant-input-clear-icon {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+.glass-input .ant-input-password-icon {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+.login-submit-btn:hover {
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.5) !important;
+  opacity: 0.95;
+}
+.login-submit-btn:active {
+  transform: translateY(0.5px) !important;
+}
+`;
+document.head.appendChild(styleSheet);
 
 export default Login

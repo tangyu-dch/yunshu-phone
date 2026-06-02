@@ -13,6 +13,7 @@ type Environment string
 const (
 	EnvProduction Environment = "production"
 	EnvTest       Environment = "test"
+	EnvLocal      Environment = "local"
 )
 
 // Config holds all application configuration
@@ -50,12 +51,18 @@ var envConfigs = map[Environment]*Config{
 		WSBaseURL:       "wss://test.api.toyfuns.top/dolphin-gateway/cc/ws/websocket",
 		LocalServerPort: 54320,
 	},
+	EnvLocal: {
+		Env:             EnvLocal,
+		APIBaseURL:      "http://localhost:8080",
+		WSBaseURL:       "ws://localhost:8082/cti/ws",
+		LocalServerPort: 54320,
+	},
 }
 
 // Get returns the current config singleton
 func Get() *Config {
 	once.Do(func() {
-		instance = envConfigs[EnvTest] // default to test
+		instance = envConfigs[EnvLocal] // default to local
 	})
 	return instance
 }

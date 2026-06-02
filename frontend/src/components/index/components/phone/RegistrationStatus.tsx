@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { Button } from 'antd';
-import { LoadingOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { LoadingOutlined, CheckCircleFilled, CloseCircleFilled, ClockCircleOutlined } from '@ant-design/icons';
 
 interface StepInfo {
   name: string;
@@ -13,70 +13,6 @@ interface RegistrationStatusProps {
   onRetry: () => void;
 }
 
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '32px 24px',
-  },
-  title: {
-    fontSize: 15,
-    fontWeight: 600,
-    color: '#262626',
-    marginBottom: 28,
-  },
-  stepsContainer: {
-    width: '100%',
-    maxWidth: 320,
-  },
-  stepRow: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    marginBottom: 4,
-    position: 'relative' as const,
-  },
-  stepIndicator: {
-    width: 32,
-    height: 32,
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    fontSize: 16,
-    marginRight: 12,
-  },
-  stepContent: {
-    flex: 1,
-    paddingBottom: 24,
-  },
-  stepName: {
-    fontSize: 14,
-    fontWeight: 500,
-    lineHeight: '32px',
-  },
-  stepError: {
-    fontSize: 12,
-    color: '#ff4d4f',
-    marginTop: 4,
-    lineHeight: 1.4,
-  },
-  connector: {
-    position: 'absolute' as const,
-    left: 15,
-    top: 32,
-    width: 2,
-    height: 24,
-    background: '#e8e8e8',
-  },
-  retryWrapper: {
-    marginTop: 16,
-    display: 'flex',
-    justifyContent: 'center',
-  },
-};
-
 /**
  * Get indicator styling and icon for each step status
  */
@@ -84,51 +20,87 @@ function getStepVisual(status: string): {
   bg: string;
   icon: React.ReactNode;
   nameColor: string;
+  className: string;
 } {
   switch (status) {
     case 'loading':
       return {
-        bg: '#e6f4ff',
-        icon: <LoadingOutlined style={{ color: '#1677ff', fontSize: 16 }} spin />,
-        nameColor: '#1677ff',
+        bg: '#e0e7ff', // soft indigo
+        icon: <LoadingOutlined style={{ color: '#4f46e5', fontSize: 15 }} spin />,
+        nameColor: '#4f46e5',
+        className: 'step-pulsing-loading',
       };
     case 'success':
       return {
-        bg: '#f6ffed',
-        icon: <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 16 }} />,
-        nameColor: '#262626',
+        bg: '#d1fae5', // soft emerald green
+        icon: <CheckCircleFilled style={{ color: '#10b981', fontSize: 15 }} />,
+        nameColor: '#1f2937',
+        className: 'step-glowing-success',
       };
     case 'failed':
       return {
-        bg: '#fff2f0',
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f', fontSize: 16 }} />,
-        nameColor: '#ff4d4f',
+        bg: '#fee2e2', // soft rose red
+        icon: <CloseCircleFilled style={{ color: '#ef4444', fontSize: 15 }} />,
+        nameColor: '#ef4444',
+        className: 'step-glowing-failed',
       };
     default:
       // pending
       return {
-        bg: '#f5f5f5',
-        icon: <ClockCircleOutlined style={{ color: '#bfbfbf', fontSize: 14 }} />,
-        nameColor: '#bfbfbf',
+        bg: '#f3f4f6', // soft grey
+        icon: <ClockCircleOutlined style={{ color: '#9ca3af', fontSize: 13 }} />,
+        nameColor: '#9ca3af',
+        className: '',
       };
   }
 }
 
 const RegistrationStatus: React.FC<RegistrationStatusProps> = ({ steps, onRetry }) => {
   const hasFailed = steps.some((s) => s.status === 'failed');
+  const [countdown, setCountdown] = React.useState(5);
 
   const handleRetry = useCallback(() => {
     onRetry();
   }, [onRetry]);
 
+  // Auto-reload countdown on connection failure
+  React.useEffect(() => {
+    if (!hasFailed) {
+      setCountdown(5);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          window.location.reload();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [hasFailed]);
+
+  // Chinese translations for steps
+  const nameTranslationMap: Record<string, string> = {
+    'extension': '1. 获取分机配置信息',
+    'sip': '2. 软电话 SIP 连通注册',
+    'websocket': '3. 云端 WebSocket 控制就绪',
+  };
+
   return (
     <div style={styles.container}>
-      <div style={styles.title}>连接状态</div>
+      <div style={styles.title}>系统连通初始化</div>
+      <div style={styles.subtitle}>正在与座席控制中枢建立安全连接</div>
 
       <div style={styles.stepsContainer}>
         {steps.map((step, index) => {
           const visual = getStepVisual(step.status);
           const isLast = index === steps.length - 1;
+          const translatedName = nameTranslationMap[step.name] || step.name;
 
           return (
             <div key={index} style={styles.stepRow}>
@@ -138,7 +110,8 @@ const RegistrationStatus: React.FC<RegistrationStatusProps> = ({ steps, onRetry 
                   style={{
                     ...styles.connector,
                     background:
-                      step.status === 'success' ? '#b7eb8f' : '#e8e8e8',
+                      step.status === 'success' ? '#10b981' : '#e5e7eb',
+                    boxShadow: step.status === 'success' ? '0 0 4px rgba(16,185,129,0.2)' : 'none',
                   }}
                 />
               )}
@@ -149,6 +122,7 @@ const RegistrationStatus: React.FC<RegistrationStatusProps> = ({ steps, onRetry 
                   ...styles.stepIndicator,
                   background: visual.bg,
                 }}
+                className={visual.className}
               >
                 {visual.icon}
               </div>
@@ -161,7 +135,7 @@ const RegistrationStatus: React.FC<RegistrationStatusProps> = ({ steps, onRetry 
                     color: visual.nameColor,
                   }}
                 >
-                  {step.name}
+                  {translatedName}
                 </div>
                 {step.error && <div style={styles.stepError}>{step.error}</div>}
               </div>
@@ -172,14 +146,134 @@ const RegistrationStatus: React.FC<RegistrationStatusProps> = ({ steps, onRetry 
 
       {/* Retry button on failure */}
       {hasFailed && (
-        <div style={styles.retryWrapper}>
-          <Button type="primary" danger onClick={handleRetry}>
-            重新连接
+        <div style={{ ...styles.retryWrapper, flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+          <Button
+            type="primary"
+            danger
+            onClick={handleRetry}
+            style={styles.retryBtn}
+            className="reg-retry-btn"
+          >
+            重 试 连 接
           </Button>
+          <div style={{ fontSize: 11, color: '#ef4444', textAlign: 'center', marginTop: 4, fontWeight: 500 }}>
+            将在 {countdown} 秒后自动刷新页面重试...
+          </div>
         </div>
       )}
     </div>
   );
 };
+
+const styles: Record<string, React.CSSProperties> = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '36px 20px',
+    fontFamily: "'Outfit', 'Inter', sans-serif",
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: 700,
+    color: '#111827',
+    marginBottom: 4,
+    letterSpacing: '0.5px',
+  },
+  subtitle: {
+    fontSize: 12,
+    color: '#9ca3af',
+    marginBottom: 36,
+  },
+  stepsContainer: {
+    width: '100%',
+    maxWidth: 280,
+  },
+  stepRow: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+    position: 'relative' as const,
+  },
+  stepIndicator: {
+    width: 30,
+    height: 30,
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    marginRight: 14,
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4)',
+    transition: 'all 0.25s ease',
+  },
+  stepContent: {
+    flex: 1,
+    paddingBottom: 28,
+  },
+  stepName: {
+    fontSize: 13,
+    fontWeight: 600,
+    lineHeight: '30px',
+    letterSpacing: '0.2px',
+  },
+  stepError: {
+    fontSize: 11,
+    color: '#ef4444',
+    marginTop: 2,
+    lineHeight: 1.4,
+  },
+  connector: {
+    position: 'absolute' as const,
+    left: 14,
+    top: 30,
+    width: 2,
+    height: 28,
+    background: '#e5e7eb',
+    transition: 'background 0.3s ease',
+  },
+  retryWrapper: {
+    marginTop: 8,
+    display: 'flex',
+    justifyContent: 'center',
+  },
+  retryBtn: {
+    height: 38,
+    borderRadius: 10,
+    fontWeight: 600,
+    fontSize: 13,
+    letterSpacing: 2,
+    padding: '0 24px',
+    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)',
+    transition: 'all 0.2s',
+  },
+};
+
+// Inject step pulse keyframes and retry hover effects into head
+const styleSheet = document.createElement('style');
+styleSheet.textContent = `
+@keyframes step-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.25); }
+  70% { box-shadow: 0 0 0 8px rgba(79, 70, 229, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+}
+.step-pulsing-loading {
+  animation: step-pulse 1.8s infinite ease-in-out;
+}
+.step-glowing-success {
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.3) !important;
+}
+.step-glowing-failed {
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.25) !important;
+}
+.reg-retry-btn:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35) !important;
+}
+.reg-retry-btn:active {
+  transform: translateY(0.5px) !important;
+}
+`;
+document.head.appendChild(styleSheet);
 
 export default RegistrationStatus;
