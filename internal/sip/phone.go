@@ -57,6 +57,7 @@ func (s CallState) String() string {
 // Params holds SIP connection parameters
 type Params struct {
 	Domain     string      `json:"domain"`
+	Proxy      string      `json:"proxy,omitempty"`
 	Port       string      `json:"port"`
 	Protocol   string      `json:"protocol"`
 	Username   string      `json:"username"`

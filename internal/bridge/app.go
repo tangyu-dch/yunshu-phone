@@ -116,7 +116,7 @@ func (b *AppBridge) GetPlatform() string {
 
 // --- Environment ---
 
-// SetEnvironment switches between "production", "test" and "local"
+// SetEnvironment switches between "production", "test", "local", and "custom"
 func (b *AppBridge) SetEnvironment(env string) {
 	switch env {
 	case "production":
@@ -125,6 +125,8 @@ func (b *AppBridge) SetEnvironment(env string) {
 		config.SetEnv(config.EnvTest)
 	case "local":
 		config.SetEnv(config.EnvLocal)
+	case "custom":
+		config.SetEnv(config.EnvCustom)
 	}
 	log.Printf("[Bridge] Environment set to: %s", env)
 }
@@ -132,6 +134,17 @@ func (b *AppBridge) SetEnvironment(env string) {
 // GetEnvironment returns the current environment name
 func (b *AppBridge) GetEnvironment() string {
 	return string(config.Get().Env)
+}
+
+// SetCustomEnvironment updates the custom environment URLs and switches to it
+func (b *AppBridge) SetCustomEnvironment(apiURL, wsURL string) {
+	config.UpdateCustom(apiURL, wsURL)
+	log.Printf("[Bridge] Custom environment set: API=%s, WS=%s", apiURL, wsURL)
+}
+
+// GetConfig returns the full current config
+func (b *AppBridge) GetConfig() config.Config {
+	return *config.Get()
 }
 
 // --- Window control ---

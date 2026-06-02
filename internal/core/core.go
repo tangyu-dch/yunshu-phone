@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
 	"sync"
 	"time"
 
@@ -336,8 +337,18 @@ func (c *Core) ConnectAll() error {
 		json.Unmarshal([]byte(extInfo.ICEServers), &iceServers)
 	}
 
+	// Extract the real SIP server IP from the API Base URL to bypass Fake-IP / multi-tenancy DNS issues
+	apiURL, err := url.Parse(config.Get().APIBaseURL)
+	realProxy := ""
+	if err == nil && apiURL.Hostname() != "" {
+		realProxy = apiURL.Hostname()
+	} else {
+		realProxy = "127.0.0.1" // Fallback
+	}
+
 	sipParams := sip.Params{
 		Domain:     extInfo.Domain,
+		Proxy:      realProxy,
 		Port:       extInfo.Port,
 		Protocol:   extInfo.Protocol,
 		Username:   sipNumber,
@@ -406,7 +417,14 @@ func (c *Core) DisconnectAll() {
 		c.wsClient.Close()
 		c.wsClient = nil
 	}
-	c.phone.Stop()
+
+	// Stop phone asynchronously to prevent blocking the UI
+	// if PJSIP is stuck in a DNS or SIP timeout (e.g., due to Fake-IP)
+	go func() {
+		defer func() { recover() }()
+		c.phone.Stop()
+	}()
+
 	c.stopCallTimer()
 
 	c.state.mu.Lock()

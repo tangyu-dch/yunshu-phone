@@ -154,16 +154,16 @@ const styles: Record<string, React.CSSProperties> = {
     paddingLeft: 76,
   },
   appIconWrapper: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
+    width: 18,
+    height: 18,
+    borderRadius: 5,
     background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(79, 70, 229, 0.25) 100%)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
   appIcon: {
-    fontSize: 15,
+    fontSize: 11,
     color: '#a5b4fc',
   },
   appTitle: {

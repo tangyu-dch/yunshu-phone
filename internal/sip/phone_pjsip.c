@@ -69,7 +69,8 @@ int pjsip_phone_init(pjsip_phone *phone,
                      const char *domain, int port,
                      const char *protocol,
                      const char *username,
-                     const char *password)
+                     const char *password,
+                     const char *proxy)
 {
     if (!phone || !domain || !protocol || !username || !password)
         return -1;
@@ -157,6 +158,13 @@ int pjsip_phone_init(pjsip_phone *phone,
     acc_cfg.cred_info[0].data      = pj_str((char *)password);
     // acc_cfg.transport_id = tp_id;
     acc_cfg.user_data = phone;
+
+    if (proxy && strlen(proxy) > 0) {
+        acc_cfg.proxy_cnt = 1;
+        char proxy_uri[512];
+        snprintf(proxy_uri, sizeof(proxy_uri), "sip:%s:%d;transport=%s;lr", proxy, port, protocol);
+        acc_cfg.proxy[0] = pj_str(proxy_uri);
+    }
 
     status = pjsua_acc_add(&acc_cfg, PJ_TRUE, &phone->acc_id);
     if (status != PJ_SUCCESS) { pjsua_destroy(); return -6; }

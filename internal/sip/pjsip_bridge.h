@@ -21,7 +21,8 @@ int pjsip_phone_init(pjsip_phone* phone,
                      const char* domain, int port,
                      const char* protocol,
                      const char* username,
-                     const char* password);
+                     const char* password,
+                     const char* proxy);
 
 /*
  * Trigger (re-)registration on the default account.

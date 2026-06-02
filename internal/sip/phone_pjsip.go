@@ -225,9 +225,13 @@ func (p *PJSIPPhone) Init(params Params) error {
 	defer C.free(unsafe.Pointer(cUsername))
 	cPassword := C.CString(params.Password)
 	defer C.free(unsafe.Pointer(cPassword))
+	var cProxy *C.char
+	if params.Proxy != "" {
+		cProxy = C.CString(params.Proxy)
+		defer C.free(unsafe.Pointer(cProxy))
+	}
 
-	status := C.pjsip_phone_init(p.handle, cDomain, C.int(port),
-		cProtocol, cUsername, cPassword)
+	status := C.pjsip_phone_init(p.handle, cDomain, C.int(port), cProtocol, cUsername, cPassword, cProxy)
 	if status != 0 {
 		C.pjsip_phone_destroy(p.handle)
 		p.handle = nil

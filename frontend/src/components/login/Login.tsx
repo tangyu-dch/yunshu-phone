@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { Form, Input, Button, message } from 'antd'
-import { UserOutlined, LockOutlined, ShopOutlined, CheckCircleFilled } from '@ant-design/icons'
+import { UserOutlined, LockOutlined, ShopOutlined, CheckCircleFilled, SettingOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { login } from '../../store/userSlice'
 import * as AppBridge from '../../../wailsjs/go/bridge/AppBridge'
+import { config } from '../../../wailsjs/go/models'
+import { Modal } from 'antd'
 
 interface LoginForm {
   account: string
@@ -17,6 +19,8 @@ const LS_KEY = 'yunshu_login_form'
 const Login: React.FC = () => {
   const [form] = Form.useForm<LoginForm>()
   const [loading, setLoading] = useState(false)
+  const [settingsVisible, setSettingsVisible] = useState(false)
+  const [settingsForm] = Form.useForm()
   const navigate = useNavigate()
   const dispatch = useDispatch()
 
@@ -31,7 +35,27 @@ const Login: React.FC = () => {
     } catch {
       // ignore
     }
-  }, [form])
+
+    // Load current config
+    AppBridge.GetConfig().then((cfg) => {
+      settingsForm.setFieldsValue({
+        apiUrl: cfg.api_base_url,
+        wsUrl: cfg.ws_base_url,
+      })
+    })
+  }, [form, settingsForm])
+
+  const handleSaveSettings = async () => {
+    try {
+      const values = await settingsForm.validateFields()
+      await AppBridge.SetCustomEnvironment(values.apiUrl, values.wsUrl)
+      await AppBridge.SetEnvironment('custom')
+      message.success('配置已保存')
+      setSettingsVisible(false)
+    } catch (e) {
+      // validation failed
+    }
+  }
 
   const handleSubmit = async (values: LoginForm) => {
     setLoading(true)
@@ -98,8 +122,16 @@ const Login: React.FC = () => {
             right: 0,
             height: '42px',
             zIndex: 10,
+            display: 'flex',
+            justifyContent: 'flex-end',
+            paddingRight: '12px',
+            alignItems: 'center'
           }}
-        />
+        >
+          <div className="no-drag" style={{ cursor: 'pointer' }} onClick={() => setSettingsVisible(true)}>
+            <SettingOutlined style={{ color: 'rgba(255, 255, 255, 0.45)', fontSize: 16 }} />
+          </div>
+        </div>
 
         {/* Logo and title */}
         <div style={styles.header}>
@@ -177,6 +209,35 @@ const Login: React.FC = () => {
           <span>VoIP 网络加密安全连通已启用</span>
         </div>
       </div>
+
+      {/* Settings Modal */}
+      <Modal
+        title="服务端配置"
+        open={settingsVisible}
+        onOk={handleSaveSettings}
+        onCancel={() => setSettingsVisible(false)}
+        okText="保存并应用"
+        cancelText="取消"
+        className="no-drag"
+        destroyOnClose
+      >
+        <Form form={settingsForm} layout="vertical">
+          <Form.Item
+            name="apiUrl"
+            label="API 服务端地址 (HTTP/HTTPS)"
+            rules={[{ required: true, message: '请输入 API 地址' }]}
+          >
+            <Input placeholder="例如: https://dolphinapi.51zhulie.com" />
+          </Form.Item>
+          <Form.Item
+            name="wsUrl"
+            label="WebSocket 地址 (WS/WSS)"
+            rules={[{ required: true, message: '请输入 WebSocket 地址' }]}
+          >
+            <Input placeholder="例如: wss://dolphinapi.51zhulie.com/cc/ws/websocket" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   )
 }

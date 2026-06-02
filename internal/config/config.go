@@ -14,6 +14,7 @@ const (
 	EnvProduction Environment = "production"
 	EnvTest       Environment = "test"
 	EnvLocal      Environment = "local"
+	EnvCustom     Environment = "custom"
 )
 
 // Config holds all application configuration
@@ -57,6 +58,12 @@ var envConfigs = map[Environment]*Config{
 		WSBaseURL:       "ws://localhost:8082/cti/ws",
 		LocalServerPort: 54320,
 	},
+	EnvCustom: {
+		Env:             EnvCustom,
+		APIBaseURL:      "http://127.0.0.1:8080",
+		WSBaseURL:       "ws://127.0.0.1:8082/cti/ws",
+		LocalServerPort: 54320,
+	},
 }
 
 // Get returns the current config singleton
@@ -73,7 +80,21 @@ func SetEnv(env Environment) {
 	defer mu.Unlock()
 	if c, ok := envConfigs[env]; ok {
 		instance = c
+		// Save when environment is explicitly changed
+		go Save()
 	}
+}
+
+// UpdateCustom updates the custom environment config and switches to it
+func UpdateCustom(apiURL, wsURL string) {
+	mu.Lock()
+	if c, ok := envConfigs[EnvCustom]; ok {
+		c.APIBaseURL = apiURL
+		c.WSBaseURL = wsURL
+		instance = c
+	}
+	mu.Unlock()
+	Save()
 }
 
 // SetVersion updates the app version
@@ -138,6 +159,10 @@ func Load() error {
 
 	if cfg.Env != "" {
 		instance = &cfg
+		if cfg.Env == EnvCustom {
+			// Update the map for EnvCustom so it's not lost
+			envConfigs[EnvCustom] = &cfg
+		}
 	}
 	return nil
 }
