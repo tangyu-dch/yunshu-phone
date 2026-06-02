@@ -13,10 +13,15 @@ Built from the ground up using **Go + Wails v2 + React 18 + TypeScript**, it del
 
 Yunshu-Phone replaces legacy Electron-based architectures with a modern event-driven design, utilizing Go's native concurrency to manage SIP states and WebSocket heartbeats, leaving the React frontend as a lightweight, purely reactive UI layer.
 
-| 🟢 Active Call Interface | 📜 Call Records |
+| 🔐 Secure Login Authentication | 📡 Softswitch Connection Init |
 | :---: | :---: |
-| ![In-Call View](https://raw.githubusercontent.com/tangyu-dch/yunshu-phone/main/build/appicon.png) | ![Call Records](https://raw.githubusercontent.com/tangyu-dch/yunshu-phone/main/build/appicon.png) |
-| *(Note: Please replace with actual screenshots in `docs/` later)* | *(Note: Please replace with actual screenshots in `docs/` later)* |
+| ![Login](docs/login.png) | ![Init](docs/init.png) |
+| *(Supports secure VoIP encryption and Intranet tunneling)* | *(3-Step: Fetch Config -> SIP Register -> WS Handshake)* |
+
+| 🟢 Native Dialpad Workspace | 📜 Advanced Call Records Audit |
+| :---: | :---: |
+| ![Dialpad](docs/dialpad.png) | ![Records](docs/records.png) |
+| *(Native keyboard/mouse interactions, real-time CTI sync)* | *(Multi-dimensional analysis including daily answer rates)*
 
 ### Key Features
 - **Native OS Integration**: Uses Wails v2 for minimal memory footprint compared to Electron.

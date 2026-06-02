@@ -13,10 +13,15 @@ Yunshu-Phone 是 [云枢 (Yunshu) 分布式智能客服与呼叫中心系统](ht
 
 Yunshu-Phone 抛弃了传统的 Electron 架构，采用现代化的事件驱动与状态中心设计。利用 Go 的原生并发优势处理 SIP 状态机与 WebSocket 心跳，让 React 前端回归轻量级的响应式 UI 渲染。
 
-| 🟢 通话界面 (In-Call) | 📜 拨打记录 (Call Records) |
+| 🔐 登录安全认证 | 📡 软交换连通初始化 |
 | :---: | :---: |
-| ![通话界面](https://raw.githubusercontent.com/tangyu-dch/yunshu-phone/main/build/appicon.png) | ![记录界面](https://raw.githubusercontent.com/tangyu-dch/yunshu-phone/main/build/appicon.png) |
-| *(注：后续请将实际截图上传至 `docs/` 目录替换此应用图标占位图)* | *(注：后续请将实际截图上传至 `docs/` 目录替换此应用图标占位图)* |
+| ![登录界面](docs/login.png) | ![连通初始化](docs/init.png) |
+| *(支持内网穿透与安全的 VoIP 强加密通信)* | *(三步走：获取配置 -> SIP 注册 -> WS 握手)* |
+
+| 🟢 拨号盘工作台 | 📜 高级拨打记录审计 |
+| :---: | :---: |
+| ![拨号盘](docs/dialpad.png) | ![拨打记录](docs/records.png) |
+| *(原生的键盘与鼠标交互，实时响应 CTI 状态)* | *(提供当日接通率、30s+ 有效通话等多维度数据分析)*
 
 ### 核心特性
 - **原生操作系统集成**: 使用 Wails v2 构建，相比 Electron，内存占用极低且启动极快。
