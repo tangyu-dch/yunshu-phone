@@ -17,12 +17,21 @@ static void cb_on_log_write(int level, const char *data, int len) {
     }
 }
 
-static int pjsip_created = 0;
+/*
+ * Process-lifetime PJSUA singleton guard.
+ * PJSUA is a process-global singleton whose internal state (thread registry,
+ * module lists, transport) is bound to the OS thread that called pjsua_create().
+ * Calling pjsua_destroy() followed by pjsua_create()+pjsua_init() does NOT
+ * fully reset internal state and leads to assertion failures in
+ * pjsip_endpt_unregister_module.  Therefore we initialise PJSUA exactly once
+ * per process and only manage the account (add/remove) on subsequent calls.
+ */
+static int pjsua_started = 0;
 static __thread pj_thread_desc thread_desc;
 static __thread pj_thread_t *thread_ptr = NULL;
 
 static void register_thread_if_needed(void) {
-    if (pjsip_created && !pj_thread_is_registered()) {
+    if (!pj_thread_is_registered()) {
         pj_thread_register("go_thread", thread_desc, &thread_ptr);
     }
 }
@@ -77,62 +86,79 @@ int pjsip_phone_init(pjsip_phone *phone,
         return -1;
 
     pj_status_t status;
-    char local_proxy[256];
 
+    /* Store params on the phone struct */
     snprintf(phone->domain,   sizeof(phone->domain),   "%s", domain);
     snprintf(phone->username,  sizeof(phone->username),  "%s", username);
     snprintf(phone->auth_username, sizeof(phone->auth_username), "%s@%s", username, domain);
     phone->port = port;
 
-    /* Create PJSUA endpoint */
-    status = pjsua_create();
-    if (status != PJ_SUCCESS) return -2;
-    pjsip_created = 1;
+    /* ── Initialise the PJSUA singleton exactly once per process ── */
+    if (!pjsua_started) {
+        status = pjsua_create();
+        if (status != PJ_SUCCESS) return -2;
 
-    /* Endpoint configuration with our callbacks */
-    pjsua_config cfg;
-    pjsua_config_default(&cfg);
-    cfg.cb.on_reg_state2    = &cb_on_reg_state2;
-    cfg.cb.on_call_state    = &cb_on_call_state;
-    cfg.cb.on_incoming_call = &cb_on_incoming_call;
+        /* Register the calling Go thread with pjlib.
+         * pjsua_create() initialises pjlib, so we can safely register now.
+         * This MUST happen before pjsua_init() which asserts thread registration. */
+        register_thread_if_needed();
 
-    pjsua_logging_config log_cfg;
-    pjsua_logging_config_default(&log_cfg);
-    log_cfg.level = 4;
-    log_cfg.cb = &cb_on_log_write;
+        /* Endpoint configuration with our callbacks */
+        pjsua_config cfg;
+        pjsua_config_default(&cfg);
+        cfg.cb.on_reg_state2    = &cb_on_reg_state2;
+        cfg.cb.on_call_state    = &cb_on_call_state;
+        cfg.cb.on_incoming_call = &cb_on_incoming_call;
 
-    pjsua_media_config media_cfg;
-    pjsua_media_config_default(&media_cfg);
+        pjsua_logging_config log_cfg;
+        pjsua_logging_config_default(&log_cfg);
+        log_cfg.level = 4;
+        log_cfg.cb = &cb_on_log_write;
 
-    pjsua_transport_config tp_cfg;
-    pjsua_transport_config_default(&tp_cfg);
-    tp_cfg.port = 0;
+        pjsua_media_config media_cfg;
+        pjsua_media_config_default(&media_cfg);
 
-    int is_local = (strstr(domain, ".local") != NULL ||
-                    strcmp(domain, "localhost") == 0 ||
-                    strcmp(domain, "127.0.0.1") == 0);
-    if (is_local) {
-        tp_cfg.bound_addr = pj_str("127.0.0.1");
-    }
+        status = pjsua_init(&cfg, &log_cfg, &media_cfg);
+        if (status != PJ_SUCCESS) return -3;
 
-    pjsip_transport_type_e tp_type;
-    if (strcasecmp(protocol, "tcp") == 0) {
-        tp_type = PJSIP_TRANSPORT_TCP;
+        pjsua_transport_config tp_cfg;
+        pjsua_transport_config_default(&tp_cfg);
+        tp_cfg.port = 0;
+
+        int is_local = (strstr(domain, ".local") != NULL ||
+                        strcmp(domain, "localhost") == 0 ||
+                        strcmp(domain, "127.0.0.1") == 0);
+        if (is_local) {
+            tp_cfg.bound_addr = pj_str("127.0.0.1");
+        }
+
+        pjsip_transport_type_e tp_type;
+        if (strcasecmp(protocol, "tcp") == 0) {
+            tp_type = PJSIP_TRANSPORT_TCP;
+        } else {
+            tp_type = PJSIP_TRANSPORT_UDP;
+        }
+
+        pjsua_transport_id tp_id;
+        status = pjsua_transport_create(tp_type, &tp_cfg, &tp_id);
+        if (status != PJ_SUCCESS) return -4;
+
+        status = pjsua_start();
+        if (status != PJ_SUCCESS) return -5;
+
+        pjsua_started = 1;
     } else {
-        tp_type = PJSIP_TRANSPORT_UDP;
+        /* PJSUA already running — just ensure thread is registered. */
+        register_thread_if_needed();
     }
 
-    status = pjsua_init(&cfg, &log_cfg, &media_cfg);
-    if (status != PJ_SUCCESS) { pjsua_destroy(); return -3; }
+    /* ── Remove previous account on this phone, if any ── */
+    if (phone->initialized && phone->acc_id != PJSUA_INVALID_ID) {
+        pjsua_acc_del(phone->acc_id);
+        phone->acc_id = PJSUA_INVALID_ID;
+    }
 
-    pjsua_transport_id tp_id;
-    status = pjsua_transport_create(tp_type, &tp_cfg, &tp_id);
-    if (status != PJ_SUCCESS) { pjsua_destroy(); return -4; }
-
-    status = pjsua_start();
-    if (status != PJ_SUCCESS) { pjsua_destroy(); return -5; }
-
-    /* Account configuration: sip:username@domain:port */
+    /* ── Add (new) SIP account ── */
     pjsua_acc_config acc_cfg;
     pjsua_acc_config_default(&acc_cfg);
 
@@ -144,8 +170,11 @@ int pjsip_phone_init(pjsip_phone *phone,
     snprintf(reg_uri, sizeof(reg_uri), "sip:%s:%d", domain, port);
     acc_cfg.reg_uri = pj_str(reg_uri);
 
-    // Bypass DNS for local domains by routing through outbound proxy
+    int is_local = (strstr(domain, ".local") != NULL ||
+                    strcmp(domain, "localhost") == 0 ||
+                    strcmp(domain, "127.0.0.1") == 0);
     if (is_local) {
+        char local_proxy[256];
         acc_cfg.proxy_cnt = 1;
         snprintf(local_proxy, sizeof(local_proxy), "sip:127.0.0.1:%d;transport=udp;lr", port);
         acc_cfg.proxy[0] = pj_str(local_proxy);
@@ -155,25 +184,24 @@ int pjsip_phone_init(pjsip_phone *phone,
     }
 
     acc_cfg.cred_count = 1;
-    
+
     // 只使用 ha1b 格式 (username@domain) 进行多租户认证
     acc_cfg.cred_info[0].scheme    = pj_str("digest");
     acc_cfg.cred_info[0].realm     = pj_str("*");
     acc_cfg.cred_info[0].username  = pj_str(phone->auth_username);
     acc_cfg.cred_info[0].data_type = PJSIP_CRED_DATA_PLAIN_PASSWD;
     acc_cfg.cred_info[0].data      = pj_str((char *)password);
-    // acc_cfg.transport_id = tp_id;
     acc_cfg.user_data = phone;
 
     if (proxy && strlen(proxy) > 0) {
-        acc_cfg.proxy_cnt = 1;
         char proxy_uri[512];
+        acc_cfg.proxy_cnt = 1;
         snprintf(proxy_uri, sizeof(proxy_uri), "sip:%s:%d;transport=%s;lr", proxy, port, protocol);
         acc_cfg.proxy[0] = pj_str(proxy_uri);
     }
 
     status = pjsua_acc_add(&acc_cfg, PJ_TRUE, &phone->acc_id);
-    if (status != PJ_SUCCESS) { pjsua_destroy(); return -6; }
+    if (status != PJ_SUCCESS) return -6;
 
     phone->initialized = 1;
     return 0;
@@ -293,14 +321,31 @@ void pjsip_phone_destroy(pjsip_phone *phone) {
     if (!phone) return;
     register_thread_if_needed();
     if (phone->initialized) {
-        pjsip_created = 0;
-        pjsua_call_hangup_all();
-        pjsua_destroy();
+        /* Only remove the account; keep PJSUA alive for reconnection. */
+        if (phone->call_id != PJSUA_INVALID_ID) {
+            pjsua_call_hangup_all();
+        }
+        if (phone->acc_id != PJSUA_INVALID_ID) {
+            pjsua_acc_del(phone->acc_id);
+        }
+        phone->acc_id  = PJSUA_INVALID_ID;
+        phone->call_id = PJSUA_INVALID_ID;
         phone->initialized = 0;
     }
-    phone->acc_id  = PJSUA_INVALID_ID;
-    phone->call_id = PJSUA_INVALID_ID;
     free(phone);
+}
+
+/*
+ * Shut down the process-lifetime PJSUA singleton.
+ * Call this ONLY at application exit (e.g. OnShutdown).
+ */
+void pjsip_bridge_shutdown(void) {
+    register_thread_if_needed();
+    if (pjsua_started) {
+        pjsua_call_hangup_all();
+        pjsua_destroy();
+        pjsua_started = 0;
+    }
 }
 
 /* -------------------------------------------------------------- */

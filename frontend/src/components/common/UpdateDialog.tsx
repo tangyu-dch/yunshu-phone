@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Modal, Button, Progress, Typography, message } from 'antd'
+import { Modal, Button, Progress, Typography, App as AntdApp } from 'antd'
 import { CloudDownloadOutlined, ReloadOutlined } from '@ant-design/icons'
 import { EventsOn, EventsOff } from '@wailsjs/runtime/runtime'
 import * as UpdateBridge from '@wailsjs/go/bridge/UpdateBridge'
@@ -25,6 +25,7 @@ const UpdateDialog: React.FC = () => {
   const [downloading, setDownloading] = useState(false)
   const [progress, setProgress] = useState<UpdateProgress | null>(null)
   const [checking, setChecking] = useState(false)
+  const { message } = AntdApp.useApp()
 
   const handleUpdateAvailable = useCallback((info: UpdateInfo) => {
     setUpdateInfo(info)
@@ -118,6 +119,7 @@ const UpdateDialog: React.FC = () => {
       closable={!updateInfo?.forceUpdate}
       maskClosable={!updateInfo?.forceUpdate}
       onCancel={handleLater}
+      className="no-drag"
       footer={
         <div style={styles.footer}>
           {isReady ? (

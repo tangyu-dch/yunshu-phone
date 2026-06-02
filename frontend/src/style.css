@@ -38,3 +38,97 @@ html, body, #root {
 .no-drag {
   --wails-draggable: no-drag;
 }
+
+/* ─── antd dark fallback ─── */
+.ant-message-notice-content,
+.ant-notification-notice {
+  background: rgba(39, 39, 42, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: #ffffff !important;
+}
+
+.ant-message-notice-content .ant-message-custom-content > span {
+  color: #ffffff !important;
+}
+
+.ant-modal-content {
+  background: rgba(30, 30, 33, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.ant-modal-title {
+  color: #ffffff !important;
+}
+
+.ant-modal-body {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.ant-modal-confirm-title {
+  color: #ffffff !important;
+}
+
+.ant-modal-confirm-content {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.ant-modal-mask {
+  background: rgba(0, 0, 0, 0.45) !important;
+}
+
+/* ─── Exit confirm modal ─── */
+.exit-confirm-modal .ant-modal-content {
+  background: rgba(24, 24, 27, 0.92) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border-radius: 14px !important;
+}
+.exit-confirm-modal .ant-modal-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  padding: 18px 20px 14px !important;
+}
+.exit-confirm-modal .ant-modal-body {
+  padding: 14px 20px 18px !important;
+}
+.exit-confirm-modal .ant-modal-footer {
+  background: transparent !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  padding: 10px 20px 14px !important;
+}
+.exit-confirm-modal .ant-modal-footer .ant-btn-dangerous {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
+}
+.exit-confirm-modal .ant-modal-footer .ant-btn-dangerous:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4) !important;
+}
+.exit-confirm-modal .ant-modal-footer .ant-btn-default {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+  font-weight: 500 !important;
+}
+.exit-confirm-modal .ant-modal-footer .ant-btn-default:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+.exit-confirm-modal .ant-modal-close {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+.exit-confirm-modal .ant-modal-close:hover {
+  color: #ffffff !important;
+}

@@ -55,11 +55,12 @@ func main() {
 		},
 		BackgroundColour: &options.RGBA{R: 0, G: 0, B: 0, A: 0},
 		Frameless:        false,
-		AlwaysOnTop:      true,
+		AlwaysOnTop:      false,
 		Mac: &mac.Options{
 			TitleBar:             mac.TitleBarHidden(),
 			WebviewIsTransparent: true,
 			WindowIsTranslucent:  true,
+			DisableZoom:          true,
 		},
 
 		OnStartup: func(ctx context.Context) {
@@ -81,12 +82,19 @@ func main() {
 		},
 
 		OnBeforeClose: func(ctx context.Context) (prevent bool) {
+			// Allow close if user has confirmed via the exit dialog
+			if appBridge.IsExitConfirmed() {
+				return false
+			}
+			// Block close during active calls
 			state := appCore.GetState()
 			if state.IsCall {
 				wailsRuntime.EventsEmit(ctx, "app:closeBlocked", "通话中无法关闭")
 				return true
 			}
-			return false
+			// Ask frontend to show exit confirmation dialog
+			wailsRuntime.EventsEmit(ctx, "app:closeRequest")
+			return true
 		},
 
 		Bind: []interface{}{

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Dropdown, Tooltip, Modal } from 'antd'
+import { Dropdown, Tooltip, App, Modal } from 'antd'
 import type { MenuProps } from 'antd'
 import DeviceCheck from '@/components/common/DeviceCheck'
 import {
@@ -20,6 +20,7 @@ import { EventsOn, EventsOff } from '@wailsjs/runtime/runtime'
 type AgentStatus = 'online' | 'away'
 
 const Header: React.FC = () => {
+  const { modal } = App.useApp()
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const userInfo = useSelector((s: RootState) => s.user.userInfo)
@@ -53,7 +54,7 @@ const Header: React.FC = () => {
   }
 
   const handleLogout = () => {
-    Modal.confirm({
+    modal.confirm({
       title: '确认退出',
       content: '您确定要退出云枢呼叫终端吗？',
       okText: '确认',

@@ -1,6 +1,7 @@
 package core
 
 import (
+	"log"
 	"yunshu-phone/internal/api"
 	"yunshu-phone/internal/event"
 )
@@ -25,7 +26,10 @@ func (c *Core) SetLoginState(userInfo *api.UserInfo, token, seatNumber string, i
 // ClearLoginState clears all login-related state
 func (c *Core) ClearLoginState() {
 	c.state.mu.Lock()
-	defer c.state.mu.Unlock()
+	if !c.state.LoggedIn {
+		c.state.mu.Unlock()
+		return
+	}
 
 	c.state.LoggedIn = false
 	c.state.UserInfo = nil
@@ -35,7 +39,9 @@ func (c *Core) ClearLoginState() {
 	c.state.IsCall = false
 	c.state.IsAutoCall = false
 	c.state.StopCall = false
+	c.state.mu.Unlock()
 
+	log.Println("[Core] ClearLoginState: cleared login state, emitting AppLogout event")
 	c.bus.Emit(AppLogout, nil)
 }
 

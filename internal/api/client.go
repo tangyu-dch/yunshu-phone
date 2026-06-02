@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
 	"yunshu-phone/internal/config"
+	"log"
 )
 
 // Client is the shared HTTP client for all API requests
@@ -99,19 +101,56 @@ func (c *Client) Do(method, path string, body interface{}) (*APIResponse, error)
 	}
 	c.mu.RUnlock()
 
+	// Log the request details
+	loggedHeaders := make(map[string]string)
+	for k, v := range req.Header {
+		if k == "Authorization" || k == "X-Token" {
+			loggedHeaders[k] = "[MASKED]"
+		} else {
+			loggedHeaders[k] = fmt.Sprintf("%v", v)
+		}
+	}
+	bodyStr := ""
+	if body != nil {
+		reqBodyBytes, _ := json.Marshal(body)
+		var bodyMap map[string]interface{}
+		if err := json.Unmarshal(reqBodyBytes, &bodyMap); err == nil {
+			maskSensitiveKeys(bodyMap)
+			maskedBytes, _ := json.Marshal(bodyMap)
+			bodyStr = string(maskedBytes)
+		} else {
+			bodyStr = string(reqBodyBytes)
+		}
+	}
+	log.Printf("[HTTP-REQ] %s %s | Headers: %v | Body: %s", method, url, loggedHeaders, bodyStr)
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		log.Printf("[HTTP-ERR] %s %s | Network Error: %v", method, url, err)
 		return nil, fmt.Errorf("http request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("read response: %w", err)
+		log.Printf("[HTTP-ERR] %s %s | Read Response Body Error: %v", method, url, err)
+		return nil, fmt.Errorf("read response body: %w", err)
 	}
+
+	respBodyStr := ""
+	var respMap map[string]interface{}
+	if err := json.Unmarshal(respBody, &respMap); err == nil {
+		maskSensitiveKeys(respMap)
+		maskedBytes, _ := json.Marshal(respMap)
+		respBodyStr = string(maskedBytes)
+	} else {
+		respBodyStr = string(respBody)
+	}
+	log.Printf("[HTTP-RESP] %s %s | HTTP Status: %d | Body: %s", method, url, resp.StatusCode, respBodyStr)
 
 	var apiResp APIResponse
 	if err := json.Unmarshal(respBody, &apiResp); err != nil {
+		log.Printf("[HTTP-ERR] %s %s | JSON Parse Error: %v | Raw Body: %s", method, url, err, string(respBody))
 		return nil, fmt.Errorf("parse response: %w (body: %s)", err, string(respBody))
 	}
 
@@ -128,17 +167,24 @@ func (c *Client) Do(method, path string, body interface{}) (*APIResponse, error)
 
 	switch apiResp.Code {
 	case 401, 4011:
+		log.Printf("[HTTP-WARN] %s %s | Code: %d (Login expired) | Message: %s", method, url, apiResp.Code, apiResp.Message)
 		if onLogout != nil {
 			go onLogout()
 		}
 		return &apiResp, fmt.Errorf("login expired")
 	case 426:
+		log.Printf("[HTTP-WARN] %s %s | Code: %d (Version expired) | Message: %s", method, url, apiResp.Code, apiResp.Message)
 		if onUpgrade != nil {
 			go onUpgrade()
 		}
 		return &apiResp, fmt.Errorf("version expired, please update")
 	case 400:
-		return &apiResp, fmt.Errorf("api error: %s", apiResp.Message)
+		log.Printf("[HTTP-ERR] %s %s | Code: 400 (API Error) | Message: %s", method, url, apiResp.Message)
+		return &apiResp, fmt.Errorf("%s", apiResp.Message)
+	default:
+		if apiResp.Code >= 300 {
+			log.Printf("[HTTP-ERR] %s %s | Code: %d (Uncaught Error) | Message: %s", method, url, apiResp.Code, apiResp.Message)
+		}
 	}
 
 	return &apiResp, nil
@@ -152,4 +198,30 @@ func (c *Client) Get(path string) (*APIResponse, error) {
 // Post performs a POST request
 func (c *Client) Post(path string, body interface{}) (*APIResponse, error) {
 	return c.Do(http.MethodPost, path, body)
+}
+
+func maskSensitiveKeys(m map[string]interface{}) {
+	for k, v := range m {
+		if isSensitiveKey(k) {
+			m[k] = "[MASKED]"
+		} else if nestedMap, ok := v.(map[string]interface{}); ok {
+			maskSensitiveKeys(nestedMap)
+		} else if slice, ok := v.([]interface{}); ok {
+			for _, item := range slice {
+				if itemMap, ok := item.(map[string]interface{}); ok {
+					maskSensitiveKeys(itemMap)
+				}
+			}
+		}
+	}
+}
+
+func isSensitiveKey(key string) bool {
+	k := strings.ToLower(key)
+	return strings.Contains(k, "password") ||
+		strings.Contains(k, "token") ||
+		strings.Contains(k, "secret") ||
+		strings.Contains(k, "auth") ||
+		strings.Contains(k, "credential") ||
+		k == "pwd"
 }

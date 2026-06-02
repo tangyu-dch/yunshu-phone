@@ -38,7 +38,7 @@ func Login(params LoginParams) (*LoginResult, error) {
 		return nil, err
 	}
 	if resp.Code != 200 {
-		return nil, fmt.Errorf("login failed: %s", resp.Message)
+		return nil, fmt.Errorf("%s", resp.Message)
 	}
 	var result LoginResult
 	if err := json.Unmarshal(resp.Data, &result); err != nil {
@@ -50,6 +50,14 @@ func Login(params LoginParams) (*LoginResult, error) {
 // Logout performs the dialpad logout
 func Logout() error {
 	_, err := Default().Post("/mer/auth/dialpad/logout", nil)
+	return err
+}
+
+// ReleaseExtension releases the current user's bound extension back to the pool.
+// Called on app exit (graceful or forced) to ensure the extension is freed
+// even if the normal logout flow was not completed.
+func ReleaseExtension() error {
+	_, err := Default().Post("/mer/v1/user/dialpad/releaseExtension", nil)
 	return err
 }
 

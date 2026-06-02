@@ -92,17 +92,21 @@ const Login: React.FC = () => {
   const handleSubmit = async (values: LoginForm) => {
     setLoading(true)
     try {
+      const trimmedAccount = (values.account || '').trim()
+      const trimmedUsername = (values.username || '').trim()
+      const trimmedPassword = values.password
+
       // Save form values to localStorage for auto-fill
       localStorage.setItem(LS_KEY, JSON.stringify({
-        account: values.account,
-        username: values.username,
-        password: values.password,
+        account: trimmedAccount,
+        username: trimmedUsername,
+        password: trimmedPassword,
       }))
 
       const result = await AppBridge.Login({
-        account: values.account,
-        username: values.username,
-        password: values.password,
+        account: trimmedAccount,
+        username: trimmedUsername,
+        password: trimmedPassword,
       })
 
       // Go Login throws on failure, so if we get here it's a success

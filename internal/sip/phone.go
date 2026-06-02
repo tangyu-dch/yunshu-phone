@@ -111,6 +111,7 @@ type Phone interface {
 	Hangup(reason string) error
 	SendDTMF(digit string) error
 	Stop() error
+	ShutdownPJSUA() error
 	GetRegStatus() RegStatus
 	GetCallState() CallState
 	SetCallCallbacks(cb CallCallbacks)

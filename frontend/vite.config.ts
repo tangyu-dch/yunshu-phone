@@ -10,6 +10,12 @@ export default defineConfig({
       '@wailsjs': path.resolve(__dirname, './wailsjs'),
     },
   },
+  server: {
+    hmr: {
+      host: 'localhost',
+      protocol: 'ws',
+    },
+  },
   css: {
     preprocessorOptions: {
       less: {

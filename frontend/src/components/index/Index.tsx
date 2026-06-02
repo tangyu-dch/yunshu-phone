@@ -138,6 +138,7 @@ const Index: React.FC = () => {
         maskClosable={false}
         footer={null}
         width={360}
+        className="no-drag"
       >
         <div style={{ textAlign: 'center', padding: '8px 0' }}>
           <Text type="secondary">

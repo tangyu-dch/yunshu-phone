@@ -3,8 +3,10 @@ package bridge
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"runtime"
+	"time"
 
 	"yunshu-phone/internal/api"
 	"yunshu-phone/internal/config"
@@ -17,8 +19,9 @@ import (
 // AppBridge handles authentication, configuration, and general app operations.
 // Bound to the Wails frontend as "AppBridge".
 type AppBridge struct {
-	ctx  context.Context
-	core *core.Core
+	ctx           context.Context
+	core          *core.Core
+	exitConfirmed bool
 }
 
 func NewAppBridge(c *core.Core) *AppBridge {
@@ -44,7 +47,7 @@ type LoginResult struct {
 	WhitelistDomains    string       `json:"whitelistDomains"`
 }
 
-// Login performs the dialpad login and initializes connections
+// Login performs the dialpad login, validates extension, and initializes connections
 func (b *AppBridge) Login(params LoginParams) (*LoginResult, error) {
 	result, err := api.Login(api.LoginParams{
 		Account:  params.Account,
@@ -57,6 +60,16 @@ func (b *AppBridge) Login(params LoginParams) (*LoginResult, error) {
 
 	// Update API client
 	api.Default().SetToken(result.Token)
+
+	// Validate extension info before allowing login
+	if _, err := api.GetExtensionInfo(); err != nil {
+		api.Default().SetToken("")
+		return nil, fmt.Errorf("分机校验失败: %w", err)
+	}
+	if valid, err := api.CheckValidNumber(); err != nil || !valid {
+		api.Default().SetToken("")
+		return nil, fmt.Errorf("未分配或启用有效外呼号码，请联系管理员")
+	}
 
 	// Update app state via core (use exported method)
 	b.core.SetLoginState(&result.UserInfo, result.Token, result.UserInfo.SeatNumber, result.InactivityDuration)
@@ -88,13 +101,48 @@ func (b *AppBridge) Disconnect() {
 	b.core.DisconnectAll()
 }
 
-// Logout performs logout and disconnects everything
+// Logout performs logout and disconnects everything asynchronously to prevent UI freeze
+// Logout performs logout and disconnects everything.
+// It executes HTTP logout and extension release synchronously with a timeout
+// to show a loading spinner in the UI, while teardown of local connections
+// (SIP/WebSocket) is backgrounded to prevent blocking due to PJSIP/network delays.
 func (b *AppBridge) Logout() error {
-	b.core.DisconnectAll()
-	err := api.Logout()
-	api.Default().SetToken("")
+	token := b.core.GetState().Token
+
+	// 1. Run local connections teardown (WS close, PJSIP Stop) in background immediately
+	// because PJSUA shutdown can block for a long time due to DNS/network timeouts.
+	go func() {
+		defer func() { recover() }()
+		b.core.DisconnectAll()
+	}()
+
+	// 2. Perform HTTP release extension and logout synchronously with a 1.5s timeout
+	// so the frontend confirm modal can display a nice loading spinner.
+	if token != "" {
+		done := make(chan struct{})
+		go func() {
+			defer func() { recover() }()
+			defer close(done)
+
+			if err := api.ReleaseExtension(); err != nil {
+				log.Printf("[Bridge] Release extension failed: %v", err)
+			}
+			_ = api.Logout()
+			api.Default().SetToken("")
+		}()
+
+		select {
+		case <-done:
+			log.Println("[Bridge] Synchronous HTTP logout complete")
+		case <-time.After(1500 * time.Millisecond):
+			log.Println("[Bridge] HTTP logout timed out, proceeding")
+		}
+	}
+
+	// 3. Clear local Go login state and notify local server
 	b.core.ClearLoginState()
-	return err
+
+	return nil
 }
 
 // --- State ---
@@ -154,14 +202,21 @@ func (b *AppBridge) MinimizeWindow() {
 	wailsRuntime.WindowMinimise(b.ctx)
 }
 
-// CloseWindow closes the application (with safety checks)
+// CloseWindow emits a close request event to trigger the exit confirmation dialog
 func (b *AppBridge) CloseWindow() {
-	state := b.core.GetState()
-	if state.IsCall {
-		wailsRuntime.EventsEmit(b.ctx, "app:closeBlocked", "cannot close during call")
-		return
-	}
+	wailsRuntime.EventsEmit(b.ctx, "app:closeRequest")
+}
+
+// ConfirmExit is called by the frontend after the user confirms they want to exit.
+// It sets a flag to bypass OnBeforeClose and then quits the application.
+func (b *AppBridge) ConfirmExit() {
+	b.exitConfirmed = true
 	wailsRuntime.Quit(b.ctx)
+}
+
+// IsExitConfirmed returns whether the user has confirmed exit (used by OnBeforeClose)
+func (b *AppBridge) IsExitConfirmed() bool {
+	return b.exitConfirmed
 }
 
 // ShowWindow brings the window to front

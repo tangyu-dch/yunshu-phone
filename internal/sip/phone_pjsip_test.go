@@ -16,18 +16,24 @@ func TestPJSIPRegister(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-
 	var regSuccess bool
+
+	var once sync.Once
+	doneCallback := func() {
+		once.Do(func() {
+			wg.Done()
+		})
+	}
 
 	phone.SetRegCallbacks(RegCallbacks{
 		OnRegistered: func() {
 			log.Println("[Test] ✅ Registered successfully!")
 			regSuccess = true
-			wg.Done()
+			doneCallback()
 		},
 		OnRegistrationFailed: func(code int, reason string) {
 			log.Printf("[Test] ❌ Registration failed: code=%d reason=%s", code, reason)
-			wg.Done()
+			doneCallback()
 		},
 		OnConnecting: func() {
 			log.Println("[Test] Connecting...")

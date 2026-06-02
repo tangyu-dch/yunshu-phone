@@ -13,11 +13,12 @@ package sip
 // #include <stdlib.h>
 import "C"
 
-// Force rebuild v4
+// Force rebuild v5
 import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"runtime"
 	"sync"
 	"time"
 	"unsafe"
@@ -150,7 +151,17 @@ func goCallCallback(eventType C.int, data *C.char) {
 // PJSIPPhone -- real PJSIP implementation via CGo
 // ---------------------------------------------------------------------------
 
+// pjsipReq is a request to execute a PJSIP operation on the dedicated OS thread.
+type pjsipReq struct {
+	fn  func() error
+	res chan error
+}
+
 // PJSIPPhone implements the Phone interface using the PJSUA C library.
+// All CGo calls to PJSIP are routed through a dedicated, OS-locked goroutine
+// (pjsipCh) to guarantee thread affinity — PJSUA is a process-global singleton
+// whose internal state (thread-local storage, module lists) is bound to the
+// OS thread that called pjsua_create().
 type PJSIPPhone struct {
 	mu             sync.RWMutex
 	params         Params
@@ -162,29 +173,50 @@ type PJSIPPhone struct {
 	maxReconnect   int
 	reconnectCount int
 	initVersion    int
+	pjsipCh        chan pjsipReq // dedicated OS thread for all PJSIP CGo calls
 }
 
-// NewPJSIPPhone creates a new PJSIP phone instance backed by a real PJSUA handle.
+// NewPJSIPPhone creates a new PJSIP phone instance.
+// A dedicated goroutine is started that locks itself to a single OS thread;
+// all subsequent PJSIP CGo calls are dispatched through this goroutine to
+// ensure PJSUA's thread-affinity requirements are met.
 func NewPJSIPPhone() *PJSIPPhone {
-	handle := C.pjsip_phone_create()
-	return &PJSIPPhone{
-		handle:       handle,
+	p := &PJSIPPhone{
 		regStatus:    RegUnregistered,
 		callState:    CallIdle,
 		maxReconnect: 5,
+		pjsipCh:      make(chan pjsipReq, 1),
 	}
+	go p.pjsipWorker()
+	return p
+}
+
+// pjsipWorker is the dedicated goroutine that runs all PJSIP CGo calls.
+// It locks itself to a single OS thread so that pjlib's thread-local state
+// (thread registry, PJSUA endpoint) stays consistent across create/init/destroy.
+func (p *PJSIPPhone) pjsipWorker() {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	for req := range p.pjsipCh {
+		req.res <- req.fn()
+	}
+}
+
+// sendPJSIP dispatches fn to the dedicated PJSIP worker and blocks until done.
+func (p *PJSIPPhone) sendPJSIP(fn func() error) error {
+	res := make(chan error, 1)
+	p.pjsipCh <- pjsipReq{fn: fn, res: res}
+	return <-res
 }
 
 func (p *PJSIPPhone) Init(params Params) error {
 	p.mu.Lock()
-
 	p.params = params
 	p.initVersion++
-
 	log.Printf("[PJSIP] Initializing with domain=%s port=%s protocol=%s user=%s",
 		params.Domain, params.Port, params.Protocol, params.Username)
 
-	// If already initialised from a previous Init() call, tear down first without holding mutex.
+	// Snapshot old handle; clear it so callbacks are ignored during re-init.
 	oldHandle := p.handle
 	p.handle = nil
 	p.mu.Unlock()
@@ -193,65 +225,69 @@ func (p *PJSIPPhone) Init(params Params) error {
 		globalPhoneLock.Lock()
 		globalPhone = nil
 		globalPhoneLock.Unlock()
-		log.Printf("[PJSIP] Cleaning up previous PJSUA instance")
-		C.pjsip_phone_destroy(oldHandle)
+	}
+
+	// All C calls happen on the dedicated OS-locked worker goroutine.
+	err := p.sendPJSIP(func() error {
+		// Remove old SIP account (PJSUA singleton stays alive for reuse).
+		if oldHandle != nil {
+			log.Printf("[PJSIP] Removing previous SIP account")
+			C.pjsip_phone_destroy(oldHandle)
+		}
+
+		handle := C.pjsip_phone_create()
+		if handle == nil {
+			return fmt.Errorf("pjsip_phone_create failed: out of memory")
+		}
+
+		C.pjsip_phone_set_reg_callback(handle, nil)
+		C.pjsip_phone_set_call_callback(handle, nil)
+
+		// Parse port (default 5060).
+		port := 5060
+		if params.Port != "" {
+			if _, err := fmt.Sscanf(params.Port, "%d", &port); err != nil || port <= 0 {
+				port = 5060
+			}
+		}
+
+		cDomain := C.CString(params.Domain)
+		defer C.free(unsafe.Pointer(cDomain))
+		cProtocol := C.CString(params.Protocol)
+		defer C.free(unsafe.Pointer(cProtocol))
+		cUsername := C.CString(params.Username)
+		defer C.free(unsafe.Pointer(cUsername))
+		cPassword := C.CString(params.Password)
+		defer C.free(unsafe.Pointer(cPassword))
+		var cProxy *C.char
+		if params.Proxy != "" {
+			cProxy = C.CString(params.Proxy)
+			defer C.free(unsafe.Pointer(cProxy))
+		}
+
+		status := C.pjsip_phone_init(handle, cDomain, C.int(port), cProtocol, cUsername, cPassword, cProxy)
+		if status != 0 {
+			C.pjsip_phone_destroy(handle)
+			return fmt.Errorf("pjsip_phone_init failed with code %d", int(status))
+		}
+
+		p.mu.Lock()
+		p.handle = handle
+		p.mu.Unlock()
+
+		// Register as the global phone so CGo callbacks can find us.
+		globalPhoneLock.Lock()
+		globalPhone = p
+		globalPhoneLock.Unlock()
+
+		return nil
+	})
+
+	if err != nil {
+		return err
 	}
 
 	p.mu.Lock()
-	p.handle = C.pjsip_phone_create()
-	if p.handle == nil {
-		p.mu.Unlock()
-		return fmt.Errorf("pjsip_phone_create failed: out of memory")
-	}
-
-	// Register as the global phone so CGo callbacks can find us.
-	globalPhoneLock.Lock()
-	globalPhone = p
-	globalPhoneLock.Unlock()
-
-	// Install CGo callback bridges.
-	C.pjsip_phone_set_reg_callback(p.handle, nil)
-	C.pjsip_phone_set_call_callback(p.handle, nil)
-	// The actual Go callback functions are called from the C callbacks via
-	// the extern goRegCallback / goCallCallback declarations.  We pass nil
-	// here because the C callbacks call goRegCallback / goCallCallback
-	// directly (declared extern in the preamble).
-
-	// Parse port (default 5060).
-	port := 5060
-	if params.Port != "" {
-		if _, err := fmt.Sscanf(params.Port, "%d", &port); err != nil || port <= 0 {
-			port = 5060
-		}
-	}
-
-	cDomain := C.CString(params.Domain)
-	defer C.free(unsafe.Pointer(cDomain))
-	cProtocol := C.CString(params.Protocol)
-	defer C.free(unsafe.Pointer(cProtocol))
-	cUsername := C.CString(params.Username)
-	defer C.free(unsafe.Pointer(cUsername))
-	cPassword := C.CString(params.Password)
-	defer C.free(unsafe.Pointer(cPassword))
-	var cProxy *C.char
-	if params.Proxy != "" {
-		cProxy = C.CString(params.Proxy)
-		defer C.free(unsafe.Pointer(cProxy))
-	}
-
-	status := C.pjsip_phone_init(p.handle, cDomain, C.int(port), cProtocol, cUsername, cPassword, cProxy)
-	if status != 0 {
-		C.pjsip_phone_destroy(p.handle)
-		p.handle = nil
-
-		globalPhoneLock.Lock()
-		globalPhone = nil
-		globalPhoneLock.Unlock()
-
-		p.mu.Unlock()
-		return fmt.Errorf("pjsip_phone_init failed with code %d", int(status))
-	}
-
 	p.setRegStatusLocked(RegConnected)
 	p.mu.Unlock()
 	return nil
@@ -259,27 +295,39 @@ func (p *PJSIPPhone) Init(params Params) error {
 
 func (p *PJSIPPhone) Register() error {
 	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	if p.regStatus == RegRegistered {
+		p.mu.Unlock()
 		return nil
 	}
 
 	if p.handle == nil {
+		p.mu.Unlock()
 		return fmt.Errorf("not initialized")
 	}
 
 	p.setRegStatusLocked(RegConnecting)
 	log.Printf("[PJSIP] Registering %s@%s", p.params.Username, p.params.Domain)
 
-	status := C.pjsip_phone_register(p.handle)
-	if status != 0 {
-		if int(status) == 171001 {
-			log.Printf("[PJSIP] Register already in progress (PJSIP_EBUSY), ignoring error")
-			return nil
+	handle := p.handle
+	p.mu.Unlock()
+
+	err := p.sendPJSIP(func() error {
+		status := C.pjsip_phone_register(handle)
+		if status != 0 {
+			if int(status) == 171001 {
+				log.Printf("[PJSIP] Register already in progress (PJSIP_EBUSY), ignoring error")
+				return nil
+			}
+			return fmt.Errorf("pjsip_phone_register failed: code %d", int(status))
 		}
+		return nil
+	})
+
+	if err != nil {
+		p.mu.Lock()
 		p.setRegStatusLocked(RegFailed)
-		return fmt.Errorf("pjsip_phone_register failed: code %d", int(status))
+		p.mu.Unlock()
+		return err
 	}
 
 	// Registration result arrives asynchronously via goRegCallback.
@@ -288,119 +336,165 @@ func (p *PJSIPPhone) Register() error {
 
 func (p *PJSIPPhone) Call(phoneNumber string, extraHeaders map[string]string) error {
 	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	if p.callState != CallIdle {
+		p.mu.Unlock()
 		return fmt.Errorf("already in call")
 	}
 
 	if p.regStatus != RegRegistered {
+		p.mu.Unlock()
 		return fmt.Errorf("not registered")
 	}
 
 	if p.handle == nil {
+		p.mu.Unlock()
 		return fmt.Errorf("not initialized")
 	}
 
 	log.Printf("[PJSIP] Calling %s", phoneNumber)
 
-	cNumber := C.CString(phoneNumber)
-	defer C.free(unsafe.Pointer(cNumber))
+	handle := p.handle
+	p.mu.Unlock()
 
-	var cHeaders *C.char
-	if len(extraHeaders) > 0 {
-		headersJSON, err := json.Marshal(extraHeaders)
-		if err != nil {
-			return fmt.Errorf("failed to marshal extra headers: %w", err)
+	err := p.sendPJSIP(func() error {
+		cNumber := C.CString(phoneNumber)
+		defer C.free(unsafe.Pointer(cNumber))
+
+		var cHeaders *C.char
+		if len(extraHeaders) > 0 {
+			headersJSON, err := json.Marshal(extraHeaders)
+			if err != nil {
+				return fmt.Errorf("failed to marshal extra headers: %w", err)
+			}
+			cHeaders = C.CString(string(headersJSON))
+			defer C.free(unsafe.Pointer(cHeaders))
 		}
-		cHeaders = C.CString(string(headersJSON))
-		defer C.free(unsafe.Pointer(cHeaders))
+
+		status := C.pjsip_phone_call(handle, cNumber, cHeaders)
+		if status != 0 {
+			return fmt.Errorf("pjsip_phone_call failed: code %d", int(status))
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
 	}
 
-	status := C.pjsip_phone_call(p.handle, cNumber, cHeaders)
-	if status != 0 {
-		return fmt.Errorf("pjsip_phone_call failed: code %d", int(status))
-	}
-
+	p.mu.Lock()
 	p.callState = CallRinging
+	p.mu.Unlock()
 	return nil
 }
 
 func (p *PJSIPPhone) Answer() error {
 	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	if p.callState != CallRinging {
+		p.mu.Unlock()
 		return fmt.Errorf("no incoming call to answer")
 	}
 
 	if p.handle == nil {
+		p.mu.Unlock()
 		return fmt.Errorf("not initialized")
 	}
 
 	log.Printf("[PJSIP] Answering call")
 
-	status := C.pjsip_phone_answer(p.handle)
-	if status != 0 {
-		return fmt.Errorf("pjsip_phone_answer failed: code %d", int(status))
+	handle := p.handle
+	p.mu.Unlock()
+
+	err := p.sendPJSIP(func() error {
+		status := C.pjsip_phone_answer(handle)
+		if status != 0 {
+			return fmt.Errorf("pjsip_phone_answer failed: code %d", int(status))
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
 	}
 
+	p.mu.Lock()
 	p.callState = CallInProgress
+	p.mu.Unlock()
 	return nil
 }
 
 func (p *PJSIPPhone) Hangup(reason string) error {
 	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	if p.callState == CallIdle {
+		p.mu.Unlock()
 		return nil
 	}
 
 	if p.handle == nil {
+		p.mu.Unlock()
 		return fmt.Errorf("not initialized")
 	}
 
 	log.Printf("[PJSIP] Hanging up: %s", reason)
 
-	var cReason *C.char
-	if reason != "" {
-		cReason = C.CString(reason)
-		defer C.free(unsafe.Pointer(cReason))
-	}
+	handle := p.handle
+	p.mu.Unlock()
 
-	cHangupHeader := C.CString(reason)
-	defer C.free(unsafe.Pointer(cHangupHeader))
+	err := p.sendPJSIP(func() error {
+		var cReason *C.char
+		if reason != "" {
+			cReason = C.CString(reason)
+			defer C.free(unsafe.Pointer(cReason))
+		}
+		cHangupHeader := C.CString(reason)
+		defer C.free(unsafe.Pointer(cHangupHeader))
 
-	status := C.pjsip_phone_hangup(p.handle, cReason, cHangupHeader)
+		status := C.pjsip_phone_hangup(handle, cReason, cHangupHeader)
+		if status != 0 {
+			return fmt.Errorf("pjsip_phone_hangup failed: code %d", int(status))
+		}
+		return nil
+	})
+
+	p.mu.Lock()
 	p.callState = CallIdle
+	p.mu.Unlock()
 
-	if status != 0 {
-		return fmt.Errorf("pjsip_phone_hangup failed: code %d", int(status))
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
 func (p *PJSIPPhone) SendDTMF(digit string) error {
 	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	if p.callState != CallInProgress {
+		p.mu.Unlock()
 		return fmt.Errorf("not in call")
 	}
 
 	if p.handle == nil {
+		p.mu.Unlock()
 		return fmt.Errorf("not initialized")
 	}
 
 	log.Printf("[PJSIP] Sending DTMF: %s", digit)
 
-	cDigits := C.CString(digit)
-	defer C.free(unsafe.Pointer(cDigits))
+	handle := p.handle
+	p.mu.Unlock()
 
-	status := C.pjsip_phone_send_dtmf(p.handle, cDigits)
-	if status != 0 {
-		return fmt.Errorf("pjsip_phone_send_dtmf failed: code %d", int(status))
+	err := p.sendPJSIP(func() error {
+		cDigits := C.CString(digit)
+		defer C.free(unsafe.Pointer(cDigits))
+
+		status := C.pjsip_phone_send_dtmf(handle, cDigits)
+		if status != 0 {
+			return fmt.Errorf("pjsip_phone_send_dtmf failed: code %d", int(status))
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -423,9 +517,24 @@ func (p *PJSIPPhone) Stop() error {
 	globalPhoneLock.Unlock()
 
 	log.Printf("[PJSIP] Stopping and destroying PJSUA instance")
-	C.pjsip_phone_destroy(handle)
+	// Destroy on the same OS thread that created the PJSUA instance.
+	_ = p.sendPJSIP(func() error {
+		C.pjsip_phone_destroy(handle)
+		return nil
+	})
 
 	return nil
+}
+
+// ShutdownPJSUA shuts down the process-lifetime PJSUA singleton.
+// Call this ONLY at application exit (e.g. from core.Shutdown).
+// After this call, no further PJSIP operations are possible.
+func (p *PJSIPPhone) ShutdownPJSUA() error {
+	log.Printf("[PJSIP] Shutting down PJSUA singleton")
+	return p.sendPJSIP(func() error {
+		C.pjsip_bridge_shutdown()
+		return nil
+	})
 }
 
 func (p *PJSIPPhone) GetRegStatus() RegStatus {

@@ -16,7 +16,7 @@ import {
   Tag,
   Space,
   Button,
-  message,
+  App as AntdApp,
 } from 'antd';
 import {
   PhoneOutlined,
@@ -77,6 +77,7 @@ const CallRecords = forwardRef<CallRecordsHandle>((_props, ref) => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { message } = AntdApp.useApp();
 
   const fetchRecords = useCallback(async (pageNum: number) => {
     setLoading(true);

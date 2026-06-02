@@ -63,10 +63,17 @@ int pjsip_phone_hangup(pjsip_phone* phone,
 int pjsip_phone_send_dtmf(pjsip_phone* phone, const char* digits);
 
 /*
- * Tear down: hang up all calls and destroy the PJSUA endpoint.
+ * Remove account, hang up calls, and free the phone struct.
+ * Does NOT destroy the PJSUA singleton (kept alive for reconnection).
  * Safe to call multiple times or on a NULL handle.
  */
 void pjsip_phone_destroy(pjsip_phone* phone);
+
+/*
+ * Shut down the process-lifetime PJSUA singleton.
+ * Call this ONLY at application exit (e.g. OnShutdown).
+ */
+void pjsip_bridge_shutdown(void);
 
 /* --- Status queries --- */
 

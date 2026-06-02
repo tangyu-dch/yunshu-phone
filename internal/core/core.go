@@ -184,18 +184,52 @@ func (c *Core) setupEventHandlers() {
 
 	// When WS receives logout
 	c.bus.On(event.WSLogout, func(_ interface{}) {
-		c.ReleaseExtension()
-		c.DisconnectAll()
+		c.state.mu.RLock()
+		token := c.state.Token
+		alreadyLoggedOut := !c.state.LoggedIn
+		c.state.mu.RUnlock()
+		if alreadyLoggedOut {
+			return
+		}
+
+		log.Println("[Core] WSLogout received, starting passive logout")
+		// Clear state and notify frontend immediately for instant response
 		c.ClearLoginState()
 		c.emitToFrontend("app:forceLogout", nil)
+
+		// Perform network/SIP cleanup in background
+		go func(tok string) {
+			defer func() { recover() }()
+			if tok != "" {
+				_ = api.ReleaseExtension()
+			}
+			c.DisconnectAll()
+		}(token)
 	})
 
 	// When HTTP client receives 401/4011 (token expired)
 	c.bus.On(event.AppLogout, func(_ interface{}) {
-		c.ReleaseExtension()
-		c.DisconnectAll()
+		c.state.mu.RLock()
+		token := c.state.Token
+		alreadyLoggedOut := !c.state.LoggedIn
+		c.state.mu.RUnlock()
+		if alreadyLoggedOut {
+			return
+		}
+
+		log.Println("[Core] AppLogout received, starting passive logout")
+		// Clear state and notify frontend immediately for instant response
 		c.ClearLoginState()
 		c.emitToFrontend("app:forceLogout", nil)
+
+		// Perform network/SIP cleanup in background
+		go func(tok string) {
+			defer func() { recover() }()
+			if tok != "" {
+				_ = api.ReleaseExtension()
+			}
+			c.DisconnectAll()
+		}(token)
 	})
 
 	// When WS receives system info
@@ -788,8 +822,12 @@ func (c *Core) waitForSIPRegistered(timeout time.Duration) bool {
 		case <-deadline:
 			return false
 		case <-ticker.C:
-			if c.phone.GetRegStatus() == sip.RegRegistered {
+			status := c.phone.GetRegStatus()
+			if status == sip.RegRegistered {
 				return true
+			}
+			if status == sip.RegFailed {
+				return false
 			}
 		}
 	}
