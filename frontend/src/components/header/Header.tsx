@@ -52,15 +52,24 @@ const Header: React.FC = () => {
     AppBridge.CloseWindow().catch(() => {})
   }
 
-  const handleLogout = async () => {
-    try {
-      await AppBridge.Logout()
-    } catch {
-      // ignore logout errors
-    } finally {
-      dispatch(logout())
-      navigate('/login')
-    }
+  const handleLogout = () => {
+    Modal.confirm({
+      title: '确认退出',
+      content: '您确定要退出云枢呼叫终端吗？',
+      okText: '确认',
+      cancelText: '取消',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          await AppBridge.Logout()
+        } catch {
+          // ignore logout errors
+        } finally {
+          dispatch(logout())
+          navigate('/login')
+        }
+      }
+    })
   }
 
   const menuItems: MenuProps['items'] = [

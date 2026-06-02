@@ -4,6 +4,7 @@ interface CallingViewProps {
   phoneNumber: string;
   duration: number;
   onHangup: () => void;
+  statusText?: string;
 }
 
 /**
@@ -15,7 +16,7 @@ function formatDuration(totalSeconds: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-const CallingView: React.FC<CallingViewProps> = ({ phoneNumber, duration, onHangup }) => {
+const CallingView: React.FC<CallingViewProps> = ({ phoneNumber, duration, onHangup, statusText }) => {
   const durationText = useMemo(() => formatDuration(duration), [duration]);
 
   return (
@@ -33,7 +34,7 @@ const CallingView: React.FC<CallingViewProps> = ({ phoneNumber, duration, onHang
       </div>
 
       <div style={styles.phoneNumber}>{phoneNumber}</div>
-      <div style={styles.statusText}>呼叫中...</div>
+      <div style={styles.statusText}>{statusText || '呼叫中...'}</div>
       <div style={styles.duration}>{durationText}</div>
 
       <div style={styles.actionWrapper}>

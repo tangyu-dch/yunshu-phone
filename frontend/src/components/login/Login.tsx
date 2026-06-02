@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { Form, Input, Button, message } from 'antd'
-import { UserOutlined, LockOutlined, ShopOutlined, CheckCircleFilled, SettingOutlined } from '@ant-design/icons'
+import { Form, Input, Button, App as AntdApp } from 'antd'
+import { UserOutlined, LockOutlined, ShopOutlined, CheckCircleFilled, SettingOutlined, ApiOutlined, GlobalOutlined, PhoneOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { login } from '@/store/userSlice'
@@ -23,9 +23,40 @@ const Login: React.FC = () => {
   const [settingsForm] = Form.useForm()
   const navigate = useNavigate()
   const dispatch = useDispatch()
+  const { message, notification } = AntdApp.useApp()
 
   // Auto-fill from localStorage on mount
   useEffect(() => {
+    // 强制清除以前可能残留的任何 Ant Design 遮罩和弹窗 DOM 节点与锁定样式，防止退出登录后页面卡死
+    try {
+      document.body.style.overflow = '';
+      document.body.style.width = '';
+      document.body.classList.remove('ant-scrolling-effect');
+      const modalRoots = document.querySelectorAll('.ant-modal-root');
+      modalRoots.forEach(node => node.remove());
+    } catch (e) {
+      console.warn('Failed to clean up modal residue:', e);
+    }
+
+    // 检查并提示由其他组件（如 Session 丢失）设置的直接错误信息
+    const loginErrorMsg = sessionStorage.getItem('login_error_msg');
+    if (loginErrorMsg) {
+      sessionStorage.removeItem('login_error_msg');
+      notification.error({
+        message: '分机未就绪',
+        description: loginErrorMsg,
+        placement: 'topRight',
+        duration: 6,
+        style: {
+          background: 'rgba(28, 28, 30, 0.92)',
+          border: '1px solid rgba(239, 68, 68, 0.2)',
+          boxShadow: '0 12px 32px rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+        },
+      });
+    }
+
     try {
       const saved = localStorage.getItem(LS_KEY)
       if (saved) {
@@ -44,7 +75,7 @@ const Login: React.FC = () => {
         sipProxy: cfg.sip_proxy,
       })
     })
-  }, [form, settingsForm])
+  }, [form, settingsForm, notification])
 
   const handleSaveSettings = async () => {
     try {
@@ -99,8 +130,51 @@ const Login: React.FC = () => {
       message.success('登录成功')
       navigate('/index')
     } catch (err: any) {
-      const msg = err?.message || err?.toString?.() || '登录失败，请稍后重试'
-      message.error(msg)
+      let msg = err?.message || err?.toString?.() || '登录失败，请稍后重试'
+      
+      // Sanitise system and technical prefixes
+      msg = msg.replace(/^api error:\s*/i, '')
+      msg = msg.replace(/^login failed:\s*/i, '')
+      msg = msg.replace(/^Error:\s*/i, '')
+      msg = msg.replace(/^分机校验失败:\s*/i, '')
+      msg = msg.replace(/^get extension info:\s*/i, '')
+      
+      let title = '登录失败'
+      let description = '账号或密码不正确，请重新输入。'
+      
+      if (msg.includes('商户账号不存在') || msg.includes('商户不存在')) {
+        title = '商户不存在'
+        description = '输入的商户账号不存在，请确认商户号是否拼写正确。'
+      } else if (msg.includes('密码') || msg.includes('password') || msg.includes('pwd')) {
+        title = '密码错误'
+        description = '密码验证失败，请重新输入分机或坐席密码。'
+      } else if (msg.includes('未分配') || msg.includes('未启用') || msg.includes('未给此坐席') || msg.includes('分机') || msg.includes('extension')) {
+        title = '分机未就绪'
+        description = msg.includes('外呼号码') ? msg : (msg || '未分配对应的 SIP 分机信息，请联系管理员核对。')
+      } else if (msg.includes('connection refused') || msg.includes('Network Error')) {
+        title = '网络连接失败'
+        description = '无法连接到接口服务器。请检查网络，或点击右上角设置图标核对 API 地址。'
+      } else if (msg.includes('timeout')) {
+        title = '请求超时'
+        description = '连接服务器超时，请检查网络后重试。'
+      } else {
+        title = '登录未成功'
+        description = msg
+      }
+
+      notification.error({
+        message: title,
+        description,
+        placement: 'topRight',
+        duration: 6,
+        style: {
+          background: 'rgba(28, 28, 30, 0.92)',
+          border: '1px solid rgba(239, 68, 68, 0.2)',
+          boxShadow: '0 12px 32px rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+        },
+      })
     } finally {
       setLoading(false)
     }
@@ -213,36 +287,61 @@ const Login: React.FC = () => {
 
       {/* Settings Modal */}
       <Modal
-        title="服务端配置"
+        title={
+          <span style={{ fontWeight: 600, fontSize: 15, color: '#ffffff' }}>
+            <SettingOutlined style={{ marginRight: 8, color: '#a5b4fc' }} />
+            服务端配置
+          </span>
+        }
         open={settingsVisible}
         onOk={handleSaveSettings}
         onCancel={() => setSettingsVisible(false)}
         okText="保存并应用"
         cancelText="取消"
-        className="no-drag"
+        className="no-drag settings-modal"
+        width={380}
+        centered
         destroyOnClose
       >
-        <Form form={settingsForm} layout="vertical">
+        <Form form={settingsForm} layout="vertical" style={{ marginTop: 8 }}>
           <Form.Item
             name="apiUrl"
-            label="API 服务端地址 (HTTP/HTTPS)"
+            label={<span style={styles.settingsLabel}>API 服务端地址</span>}
             rules={[{ required: true, message: '请输入 API 地址' }]}
+            style={{ marginBottom: 16 }}
           >
-            <Input placeholder="例如: https://dolphinapi.51zhulie.com" />
+            <Input
+              prefix={<ApiOutlined style={{ color: 'rgba(255, 255, 255, 0.4)' }} />}
+              placeholder="https://dolphinapi.51zhulie.com"
+              allowClear
+              className="glass-input"
+            />
           </Form.Item>
           <Form.Item
             name="wsUrl"
-            label="WebSocket 地址 (WS/WSS)"
+            label={<span style={styles.settingsLabel}>WebSocket 地址</span>}
             rules={[{ required: true, message: '请输入 WebSocket 地址' }]}
+            style={{ marginBottom: 16 }}
           >
-            <Input placeholder="例如: wss://dolphinapi.51zhulie.com/cc/ws/websocket" />
+            <Input
+              prefix={<GlobalOutlined style={{ color: 'rgba(255, 255, 255, 0.4)' }} />}
+              placeholder="wss://dolphinapi.51zhulie.com/cc/ws/websocket"
+              allowClear
+              className="glass-input"
+            />
           </Form.Item>
           <Form.Item
             name="sipProxy"
-            label="SIP 注册地址 (IP/域名:端口)"
+            label={<span style={styles.settingsLabel}>SIP 注册地址</span>}
             rules={[{ required: true, message: '请输入 SIP 注册地址' }]}
+            style={{ marginBottom: 0 }}
           >
-            <Input placeholder="例如: 127.0.0.1:5060" />
+            <Input
+              prefix={<PhoneOutlined style={{ color: 'rgba(255, 255, 255, 0.4)' }} />}
+              placeholder="127.0.0.1:5060"
+              allowClear
+              className="glass-input"
+            />
           </Form.Item>
         </Form>
       </Modal>
@@ -260,6 +359,12 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'transparent',
     overflow: 'hidden',
     fontFamily: "'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+  },
+  settingsLabel: {
+    fontSize: 12,
+    fontWeight: 500,
+    color: 'rgba(255, 255, 255, 0.7)',
+    letterSpacing: '0.3px',
   },
   aurora1: {
     position: 'absolute',
@@ -355,7 +460,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   footer: {
     marginTop: 20,
-    fontSize: 10,
+    fontSize: 10,  
     color: '#71717a',
     display: 'flex',
     alignItems: 'center',
@@ -405,6 +510,66 @@ styleSheet.textContent = `
 }
 .login-submit-btn:active {
   transform: translateY(0.5px) !important;
+}
+
+/* ─── Settings modal ─── */
+.settings-modal .ant-modal-content {
+  background: rgba(24, 24, 27, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+}
+.settings-modal .ant-modal-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  padding: 20px 24px 16px !important;
+}
+.settings-modal .ant-modal-body {
+  padding: 16px 24px 20px !important;
+}
+.settings-modal .ant-modal-footer {
+  background: transparent !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  padding: 12px 24px 16px !important;
+}
+.settings-modal .ant-modal-footer .ant-btn-primary {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35) !important;
+}
+.settings-modal .ant-modal-footer .ant-btn-primary:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.45) !important;
+}
+.settings-modal .ant-modal-footer .ant-btn-default {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+  font-weight: 500 !important;
+}
+.settings-modal .ant-modal-footer .ant-btn-default:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+.settings-modal .ant-modal-close {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+.settings-modal .ant-modal-close:hover {
+  color: #ffffff !important;
+}
+.settings-modal .ant-form-item-label > label {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+.settings-modal .ant-form-item-label > label.ant-form-item-required::before {
+  color: #ef4444 !important;
+}
+.settings-modal .ant-form-item-explain-error {
+  color: #ef4444 !important;
+  font-size: 11px !important;
 }
 `;
 document.head.appendChild(styleSheet);

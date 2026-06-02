@@ -131,7 +131,27 @@ func (c *Core) Init(ctx context.Context) {
 func (c *Core) GetState() AppState {
 	c.state.mu.RLock()
 	defer c.state.mu.RUnlock()
-	return c.state
+	return AppState{
+		LoggedIn:         c.state.LoggedIn,
+		UserInfo:         c.state.UserInfo,
+		Token:            c.state.Token,
+		SeatNumber:       c.state.SeatNumber,
+		AppVersion:       c.state.AppVersion,
+		IsCall:           c.state.IsCall,
+		IsAutoCall:       c.state.IsAutoCall,
+		StopCall:         c.state.StopCall,
+		InactiveDuration: c.state.InactiveDuration,
+		ConnSteps:        c.state.ConnSteps,
+		ConnReady:        c.state.ConnReady,
+		CallState:        c.state.CallState,
+		CallNumber:       c.state.CallNumber,
+		CallDuration:     c.state.CallDuration,
+		CallID:           c.state.CallID,
+		SIPStatus:        c.state.SIPStatus,
+		WSStatus:         c.state.WSStatus,
+		AgentOnline:      c.state.AgentOnline,
+		Permissions:      c.state.Permissions,
+	}
 }
 
 // --- Event wiring ---
@@ -164,6 +184,7 @@ func (c *Core) setupEventHandlers() {
 
 	// When WS receives logout
 	c.bus.On(event.WSLogout, func(_ interface{}) {
+		c.ReleaseExtension()
 		c.DisconnectAll()
 		c.ClearLoginState()
 		c.emitToFrontend("app:forceLogout", nil)
@@ -171,6 +192,7 @@ func (c *Core) setupEventHandlers() {
 
 	// When HTTP client receives 401/4011 (token expired)
 	c.bus.On(event.AppLogout, func(_ interface{}) {
+		c.ReleaseExtension()
 		c.DisconnectAll()
 		c.ClearLoginState()
 		c.emitToFrontend("app:forceLogout", nil)
@@ -260,6 +282,7 @@ func (c *Core) setupSIPCallbacks() {
 		OnConfirmed: func() {
 			c.state.mu.Lock()
 			c.state.CallState = "in_progress"
+			c.state.CallDuration = 0
 			c.state.mu.Unlock()
 			c.startCallTimer()
 			c.emitToFrontend("call:confirmed", nil)
@@ -403,15 +426,6 @@ func (c *Core) ConnectAll() error {
 	c.state.mu.Unlock()
 	c.bus.Emit(event.ConnAllReady, nil)
 	c.emitToFrontend("conn:ready", nil)
-
-	// Temporary test call triggers in local/dev env
-	go func() {
-		time.Sleep(5 * time.Second)
-		log.Printf("[Test] Triggering automatic test call to 111111...")
-		if err := c.MakeCall("111111", "yunshu", nil); err != nil {
-			log.Printf("[Test] Automated test call failed: %v", err)
-		}
-	}()
 
 	return nil
 }
@@ -596,6 +610,7 @@ func (c *Core) handleWSAnswer(payload interface{}) {
 
 	c.state.mu.Lock()
 	c.state.CallState = "in_progress"
+	c.state.CallDuration = 0
 	c.state.mu.Unlock()
 
 	// Restart timer for actual call duration
@@ -656,7 +671,19 @@ func (c *Core) MakeCall(phoneNumber string, platformType string, extra map[strin
 	}
 
 	// Initiate SIP call
-	return c.phone.Call(phoneNumber, sipHeaders)
+	if err := c.phone.Call(phoneNumber, sipHeaders); err != nil {
+		return err
+	}
+
+	c.state.mu.Lock()
+	c.state.CallState = "ringing"
+	c.state.CallNumber = phoneNumber
+	c.state.IsCall = true
+	c.state.CallDuration = 0
+	c.state.mu.Unlock()
+
+	c.startCallTimer()
+	return nil
 }
 
 // AnswerCall answers an incoming call
@@ -875,7 +902,14 @@ func (c *Core) StartLocalServer(certDir string) error {
 
 // Shutdown gracefully shuts down everything
 func (c *Core) Shutdown() {
+	// 释放分机绑定（在断开连接之前调用，确保服务端能收到请求）
+	c.ReleaseExtension()
+
 	c.DisconnectAll()
+
+	// Shut down the PJSUA singleton (process-lifetime cleanup)
+	c.phone.ShutdownPJSUA()
+
 	if c.mouseMon != nil {
 		c.mouseMon.Stop()
 	}
@@ -886,4 +920,23 @@ func (c *Core) Shutdown() {
 		c.localServer.Stop()
 	}
 	log.Println("[Core] Shutdown complete")
+}
+
+// ReleaseExtension 调用服务端释放当前坐席绑定的分机。
+// 在所有退出路径（正常退出、强制登出、窗口关闭）中被调用，
+// 确保分机被归还到空闲池，可供其他坐席使用。
+func (c *Core) ReleaseExtension() {
+	c.state.mu.RLock()
+	token := c.state.Token
+	c.state.mu.RUnlock()
+
+	if token == "" {
+		return // 未登录，无需释放
+	}
+
+	if err := api.ReleaseExtension(); err != nil {
+		log.Printf("[Core] Release extension failed (may be expected if already released): %v", err)
+	} else {
+		log.Println("[Core] Extension released successfully")
+	}
 }

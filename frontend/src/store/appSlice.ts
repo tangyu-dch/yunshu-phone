@@ -11,6 +11,8 @@ interface AppState {
   callNumber: string
   /** Call duration in seconds */
   callDuration: number
+  /** Call status text: 正在呼叫... | 对方振铃中... | 通话中 */
+  callStatusText: string
   /** Whether all connections are ready */
   connReady: boolean
   /** Connection step progress */
@@ -31,6 +33,7 @@ const initialState: AppState = {
   callState: 'idle',
   callNumber: '',
   callDuration: 0,
+  callStatusText: '',
   connReady: false,
   connSteps: [],
   isAutoCall: false,
@@ -54,6 +57,7 @@ const appSlice = createSlice({
       if (action.payload === 'idle') {
         state.callNumber = ''
         state.callDuration = 0
+        state.callStatusText = ''
         state.isCall = false
       } else {
         state.isCall = true
@@ -64,6 +68,9 @@ const appSlice = createSlice({
     },
     setCallDuration(state, action: PayloadAction<number>) {
       state.callDuration = action.payload
+    },
+    setCallStatusText(state, action: PayloadAction<string>) {
+      state.callStatusText = action.payload
     },
     setConnReady(state, action: PayloadAction<boolean>) {
       state.connReady = action.payload
@@ -88,7 +95,7 @@ const appSlice = createSlice({
 
 export const {
   setSipStatus, setWsStatus, setCallState, setCallNumber,
-  setCallDuration, setConnReady, setConnSteps, setIsAutoCall,
+  setCallDuration, setCallStatusText, setConnReady, setConnSteps, setIsAutoCall,
   setAgentOnline, setGrayscale, reset,
 } = appSlice.actions
 

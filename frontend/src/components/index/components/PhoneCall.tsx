@@ -1,5 +1,8 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { Button, Typography, message } from 'antd';
+import { LoadingOutlined, ReloadOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 
 import * as AppBridge from '@wailsjs/go/bridge/AppBridge';
 import * as CallBridge from '@wailsjs/go/bridge/CallBridge';
@@ -8,12 +11,14 @@ import {
   setCallState,
   setCallNumber,
   setCallDuration,
+  setCallStatusText,
   setConnReady,
   setConnSteps,
   setIsAutoCall,
   setSipStatus,
   setAgentOnline,
 } from '@/store/appSlice';
+import { logout } from '@/store/userSlice';
 import { RootState } from '@/store';
 import { callAudio } from '@/utils/audio';
 
@@ -21,18 +26,21 @@ import DialPad from './phone/DialPad';
 import CallingView from './phone/CallingView';
 import InCallView from './phone/InCallView';
 import AutoCallView from './phone/AutoCallView';
-import RegistrationStatus from './phone/RegistrationStatus';
+
+const { Text } = Typography;
 
 const MOUSE_THROTTLE_MS = 2000;
 
 const PhoneCall: React.FC = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const connReady = useSelector((s: RootState) => s.app.connReady);
   const connSteps = useSelector((s: RootState) => s.app.connSteps);
   const callState = useSelector((s: RootState) => s.app.callState);
   const callNumber = useSelector((s: RootState) => s.app.callNumber);
   const callDuration = useSelector((s: RootState) => s.app.callDuration);
+  const callStatusText = useSelector((s: RootState) => s.app.callStatusText);
   const isAutoCall = useSelector((s: RootState) => s.app.isAutoCall);
   const inactivityDurationSec = useSelector(
     (s: RootState) => s.user.inactivityDurationSec
@@ -61,10 +69,20 @@ const PhoneCall: React.FC = () => {
 
   // ─── Manual call handler ──────────────────────────────────────────────────
   const handleManualCall = useCallback((number: string) => {
+    // 立即在前端进入“呼叫中”状态以提供即时的界面回馈，避免界面在拨号盘上卡顿
+    dispatch(setCallState('ringing'));
+    dispatch(setCallNumber(number));
+    dispatch(setCallDuration(0));
+    dispatch(setCallStatusText('正在呼叫...'));
+
     CallBridge.MakeCall(number, 'yunshu', {}).catch((err: unknown) => {
-      console.error('[PhoneCall] MakeCall failed:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[PhoneCall] MakeCall failed:', msg);
+      message.error(msg || '呼叫失败，请重试');
+      // 呼叫失败时恢复闲置状态
+      dispatch(setCallState('idle'));
     });
-  }, []);
+  }, [dispatch]);
 
   // ─── Hangup handler ───────────────────────────────────────────────────────
   const handleHangup = useCallback(() => {
@@ -85,8 +103,21 @@ const PhoneCall: React.FC = () => {
           console.error('[PhoneCall] RestoreSession failed:', err);
         }
       }
-      AppBridge.Connect().catch((err: unknown) => {
+      AppBridge.Connect().catch((err: any) => {
         console.error('[PhoneCall] Connect failed:', err);
+        // 如果在连通过程中发生错误（如分机未分配/禁用），直接清理会话，跳转回登录页直接进行报错提示
+        let msg = err?.message || String(err);
+        msg = msg.replace(/^api error:\s*/i, '');
+        msg = msg.replace(/^Error:\s*/i, '');
+        msg = msg.replace(/^分机校验失败:\s*/i, '');
+        msg = msg.replace(/^get extension info:\s*/i, '');
+        msg = msg.replace(/^fetch extension:\s*/i, '');
+        
+        sessionStorage.setItem('login_error_msg', msg || '分机配置获取失败，请联系管理员。');
+        
+        AppBridge.Logout().catch(() => {});
+        dispatch(logout());
+        navigate('/login');
       });
     };
     initConnect();
@@ -120,24 +151,28 @@ const PhoneCall: React.FC = () => {
     EventsOn('call:progress', (displayNumber: string) => {
       dispatch(setCallState('ringing'));
       dispatch(setCallNumber(displayNumber || ''));
+      dispatch(setCallStatusText('对方振铃中...'));
       callAudio.playRinging();
     });
 
     // Go emits: call:ring with nil (incoming call, already auto-answered in Go)
     EventsOn('call:ring', () => {
       dispatch(setCallState('ringing'));
+      dispatch(setCallStatusText('对方振铃中...'));
       callAudio.playRinging();
     });
 
     // Go emits: call:answered with nil
     EventsOn('call:answered', () => {
       dispatch(setCallState('in_progress'));
+      dispatch(setCallStatusText('通话中'));
       callAudio.playAnswered();
     });
 
     // Go emits: call:confirmed with nil
     EventsOn('call:confirmed', () => {
       dispatch(setCallState('in_progress'));
+      dispatch(setCallStatusText('通话中'));
       callAudio.playAnswered();
     });
 
@@ -214,11 +249,38 @@ const PhoneCall: React.FC = () => {
       ];
       events.forEach((e) => EventsOff(e));
     };
-  }, [dispatch, inactivityDurationSec, handleMouseMove]);
+  }, [dispatch, inactivityDurationSec, handleMouseMove, navigate, token, userInfo]);
+
+  // ─── Derive connection error from steps ────────────────────────────────────
+  const connError = useMemo(() => {
+    const failed = connSteps.find((s) => s.status === 'failed');
+    return failed?.error || null;
+  }, [connSteps]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
   if (!connReady) {
-    return <RegistrationStatus steps={connSteps} onRetry={retryConnection} />;
+    return (
+      <div style={connStyles.container}>
+        {connError ? (
+          <>
+            <Text style={connStyles.errorText}>{connError}</Text>
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={retryConnection}
+              style={connStyles.retryBtn}
+            >
+              重试连接
+            </Button>
+          </>
+        ) : (
+          <>
+            <LoadingOutlined style={connStyles.spinner} spin />
+            <Text style={connStyles.loadingText}>正在安全连通中枢...</Text>
+          </>
+        )}
+      </div>
+    );
   }
 
   if (callState === 'idle') {
@@ -230,6 +292,7 @@ const PhoneCall: React.FC = () => {
       <CallingView
         phoneNumber={callNumber}
         duration={callDuration}
+        statusText={callStatusText}
         onHangup={handleHangup}
       />
     );
@@ -246,6 +309,40 @@ const PhoneCall: React.FC = () => {
   }
 
   return null;
+};
+
+const connStyles: Record<string, React.CSSProperties> = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '48px 20px',
+    gap: 16,
+  },
+  spinner: {
+    fontSize: 28,
+    color: '#6366f1',
+  },
+  loadingText: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.55)',
+  },
+  errorText: {
+    fontSize: 13,
+    color: '#ef4444',
+    textAlign: 'center',
+    lineHeight: 1.6,
+    maxWidth: 260,
+  },
+  retryBtn: {
+    borderRadius: 10,
+    fontWeight: 600,
+    fontSize: 13,
+    background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+    border: 'none',
+    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+  },
 };
 
 export default PhoneCall;
