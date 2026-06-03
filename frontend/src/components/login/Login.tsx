@@ -306,7 +306,7 @@ const Login: React.FC = () => {
         className="no-drag settings-modal"
         width={380}
         centered
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={settingsForm} layout="vertical" style={{ marginTop: 8 }}>
           <Form.Item

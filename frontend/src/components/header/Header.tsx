@@ -142,7 +142,7 @@ const Header: React.FC = () => {
         onCancel={() => setIsDeviceCheckOpen(false)}
         footer={null}
         width={340}
-        destroyOnClose
+        destroyOnHidden
         centered
         className="no-drag device-check-modal"
       >
