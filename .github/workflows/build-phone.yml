@@ -125,8 +125,7 @@ jobs:
         shell: msys2 {0}
         run: |
           export PKG_CONFIG_PATH="/C/pjsip-install/lib/pkgconfig:/mingw64/lib/pkgconfig"
-          export PKG_CONFIG="$(pwd)/build/pkg-config-static.sh"
-          chmod +x build/pkg-config-static.sh
+          export PKG_CONFIG=$(cygpath -w "$(pwd)/build/pkg-config-static.bat")
           wails build -platform windows/amd64 -nsis
 
       - name: Upload Windows Installer
