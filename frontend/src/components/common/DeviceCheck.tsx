@@ -43,6 +43,89 @@ const DeviceCheck: React.FC = () => {
   const mics = devices.filter((d) => d.kind === 'audioinput')
   const speakers = devices.filter((d) => d.kind === 'audiooutput')
 
+  // Inject style block on mount
+  useEffect(() => {
+    const id = 'device-check-styles'
+    if (!document.getElementById(id)) {
+      const style = document.createElement('style')
+      style.id = id
+      style.textContent = `
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse-indigo {
+          0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+          70% { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
+        @keyframes pulse-red {
+          0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+          70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .premium-card {
+          background: rgba(255, 255, 255, 0.015) !important;
+          border: 1px solid rgba(255, 255, 255, 0.05) !important;
+          border-radius: 12px !important;
+          box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.02), 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+          transition: all 0.2s ease-in-out !important;
+        }
+        .premium-card:hover {
+          border-color: rgba(255, 255, 255, 0.1) !important;
+          background: rgba(255, 255, 255, 0.025) !important;
+        }
+        .premium-card .ant-card-head {
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+          min-height: 38px !important;
+          padding: 0 12px !important;
+        }
+        .premium-card .ant-card-head-title {
+          padding: 8px 0 !important;
+          font-weight: 600 !important;
+          color: #f4f4f5 !important;
+        }
+        .premium-card .ant-card-body {
+          padding: 12px !important;
+        }
+        .premium-card .ant-card-extra {
+          padding: 8px 0 !important;
+        }
+        .premium-select .ant-select-selector {
+          background: rgba(255, 255, 255, 0.02) !important;
+          border: 1px solid rgba(255, 255, 255, 0.08) !important;
+          border-radius: 8px !important;
+          color: #f4f4f5 !important;
+          height: 32px !important;
+          transition: all 0.2s !important;
+        }
+        .premium-select.ant-select-focused .ant-select-selector,
+        .premium-select:hover .ant-select-selector {
+          border-color: #6366f1 !important;
+          box-shadow: 0 0 8px rgba(99, 102, 241, 0.15) !important;
+        }
+        .premium-select .ant-select-arrow {
+          color: rgba(255, 255, 255, 0.4) !important;
+        }
+        .btn-premium {
+          border-radius: 8px !important;
+          font-weight: 500 !important;
+          transition: all 0.2s !important;
+        }
+        .btn-premium:hover {
+          transform: translateY(-1px);
+        }
+        .btn-pulse-speaker {
+          animation: pulse-indigo 1.5s infinite;
+        }
+        .btn-pulse-mic {
+          animation: pulse-red 1.5s infinite;
+        }
+      `
+      document.head.appendChild(style)
+    }
+  }, [])
+
   // Fetch and populate audio devices
   const refreshDevices = useCallback(async () => {
     setLoading(true)
@@ -193,12 +276,119 @@ const DeviceCheck: React.FC = () => {
     }
   }
 
+  const renderVolumeMeter = () => {
+    const barCount = 18
+    const activeBars = isTestingMic ? Math.ceil((micVolume / 100) * barCount) : 0
+    return (
+      <div style={{ display: 'flex', gap: 3, alignItems: 'center', height: 10, margin: '8px 0' }}>
+        {Array.from({ length: barCount }).map((_, idx) => {
+          const isActive = idx < activeBars
+          let color = 'rgba(255, 255, 255, 0.08)'
+          let glow = 'none'
+          if (isActive) {
+            if (idx < 11) {
+              color = '#10b981' // Green
+              glow = '0 0 6px rgba(16, 185, 129, 0.5)'
+            } else if (idx < 15) {
+              color = '#f59e0b' // Yellow/Orange
+              glow = '0 0 6px rgba(245, 158, 11, 0.5)'
+            } else {
+              color = '#ef4444' // Red/Coral
+              glow = '0 0 6px rgba(239, 68, 68, 0.5)'
+            }
+          }
+          return (
+            <div
+              key={idx}
+              style={{
+                flex: 1,
+                height: '100%',
+                backgroundColor: color,
+                borderRadius: 2,
+                boxShadow: glow,
+                transition: 'background-color 0.05s, box-shadow 0.05s',
+              }}
+            />
+          )
+        })}
+      </div>
+    )
+  }
+
+  if (loading && devices.length === 0) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '48px 16px',
+        textAlign: 'center',
+        animation: 'fadeIn 0.2s ease-in-out',
+      }}>
+        <ReloadOutlined spin style={{ fontSize: 32, color: '#6366f1', marginBottom: 16 }} />
+        <Text style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.65)' }}>正在检测音频设备...</Text>
+      </div>
+    )
+  }
+
+  if (!loading && mics.length === 0 && speakers.length === 0) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '40px 16px',
+        textAlign: 'center',
+        animation: 'fadeIn 0.3s ease-in-out',
+      }}>
+        <div style={{
+          width: 56,
+          height: 56,
+          borderRadius: '50%',
+          background: 'rgba(239, 68, 68, 0.1)',
+          border: '1px solid rgba(239, 68, 68, 0.2)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 16,
+          boxShadow: '0 0 16px rgba(239, 68, 68, 0.15)',
+        }}>
+          <AudioOutlined style={{ fontSize: 24, color: '#ef4444' }} />
+        </div>
+        <Text style={{ fontSize: 14, fontWeight: 600, color: '#f4f4f5', display: 'block', marginBottom: 6 }}>
+          未检测到音频设备
+        </Text>
+        <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 20, maxWidth: 280, lineHeight: 1.5 }}>
+          请接入耳麦或麦克风设备。如果已接入，请在 macOS 系统“设置 - 隐私与安全性 - 麦克风”中确认已允许本应用访问。
+        </Text>
+        <Button
+          type="primary"
+          icon={<ReloadOutlined spin={loading} />}
+          onClick={refreshDevices}
+          loading={loading}
+          style={{
+            borderRadius: 8,
+            background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+            border: 'none',
+            boxShadow: '0 4px 12px rgba(79, 70, 229, 0.3)',
+            height: 32,
+            padding: '0 16px',
+          }}
+        >
+          重新检测
+        </Button>
+      </div>
+    )
+  }
+
   return (
-    <div style={{ maxWidth: 450, padding: '4px 0' }}>
+    <div style={{ maxWidth: 450, padding: '4px 0', animation: 'fadeIn 0.25s ease-in-out' }}>
       {/* Title & Refresh Button */}
       <Space style={{ marginBottom: 12, width: '100%', justifyContent: 'space-between' }} align="center">
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          请戴上耳机麦克风，确保呼入呼出通话音质良好。
+        <Text type="secondary" style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.45)' }}>
+          请戴上耳麦，确保您的呼叫及通话音质良好。
         </Text>
         <Button
           type="text"
@@ -206,21 +396,23 @@ const DeviceCheck: React.FC = () => {
           icon={<ReloadOutlined spin={loading} />}
           onClick={refreshDevices}
           loading={loading}
+          style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: 12 }}
         >
-          刷新设备
+          刷新
         </Button>
       </Space>
 
       {/* 1. Device selection controls */}
-      <Card size="small" style={{ marginBottom: 12, background: 'rgba(255,255,255,0.015)' }}>
+      <Card size="small" className="premium-card" style={{ marginBottom: 12 }}>
         <Space direction="vertical" style={{ width: '100%' }} size={10}>
           <div>
-            <Text style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
-              <SoundOutlined style={{ color: '#1677ff', marginRight: 4 }} />
+            <Text style={{ fontSize: 11, display: 'block', marginBottom: 4, color: 'rgba(255, 255, 255, 0.65)' }}>
+              <SoundOutlined style={{ color: '#6366f1', marginRight: 4 }} />
               输出设备 (听筒/扬声器)
             </Text>
             <Select
               size="small"
+              className="premium-select"
               style={{ width: '100%' }}
               placeholder="选择音频输出设备"
               value={selectedSpeaker}
@@ -237,12 +429,13 @@ const DeviceCheck: React.FC = () => {
           </div>
 
           <div>
-            <Text style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
-              <AudioOutlined style={{ color: '#722ed1', marginRight: 4 }} />
+            <Text style={{ fontSize: 11, display: 'block', marginBottom: 4, color: 'rgba(255, 255, 255, 0.65)' }}>
+              <AudioOutlined style={{ color: '#8b5cf6', marginRight: 4 }} />
               输入设备 (麦克风)
             </Text>
             <Select
               size="small"
+              className="premium-select"
               style={{ width: '100%' }}
               placeholder="选择音频输入设备"
               value={selectedMic}
@@ -264,18 +457,30 @@ const DeviceCheck: React.FC = () => {
       <Space direction="vertical" style={{ width: '100%' }} size={12}>
         
         {/* Speaker checking */}
-        <Card size="small" title={<span style={{ fontSize: 13 }}><SoundOutlined /> 扬声器测试</span>}>
-          <Paragraph style={{ fontSize: 11, color: '#8c8c8c', marginBottom: 8 }}>
-            点击“播放测试声音”，确认您的耳机听筒或扬声器能否清晰地听到音乐声。
+        <Card 
+          size="small" 
+          className="premium-card"
+          title={<span style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}><SoundOutlined style={{ color: '#6366f1' }} /> 扬声器测试</span>}
+        >
+          <Paragraph style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.45)', marginBottom: 8, lineHeight: 1.4 }}>
+            点击“播放测试声音”，确认您的耳机听筒或扬声器能否清晰地听到提示音。
           </Paragraph>
           <Button
-            type="primary"
-            ghost
+            type="default"
             size="small"
             icon={<PlayCircleOutlined />}
             loading={isPlayingSound}
             onClick={handleTestSpeaker}
             disabled={speakers.length === 0}
+            className={`btn-premium ${isPlayingSound ? 'btn-pulse-speaker' : ''}`}
+            style={{
+              height: 28,
+              borderRadius: 6,
+              background: isPlayingSound ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: '#fff',
+              padding: '0 12px',
+            }}
           >
             {isPlayingSound ? '正在播放...' : '播放测试声音'}
           </Button>
@@ -284,49 +489,48 @@ const DeviceCheck: React.FC = () => {
         {/* Microphone checking */}
         <Card 
           size="small" 
-          title={<span style={{ fontSize: 13 }}><AudioOutlined /> 麦克风测试</span>}
+          className="premium-card"
+          title={<span style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}><AudioOutlined style={{ color: '#8b5cf6' }} /> 麦克风测试</span>}
           extra={
             micTestStatus === 'success' ? (
-              <Tag color="success" icon={<CheckCircleOutlined />}>检测正常</Tag>
+              <Tag color="success" style={{ borderRadius: 4, border: 'none', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', margin: 0, padding: '0 6px', fontSize: 11 }} icon={<CheckCircleOutlined />}>检测正常</Tag>
             ) : micTestStatus === 'fail' ? (
-              <Tag color="error" icon={<CloseCircleOutlined />}>检测失败</Tag>
+              <Tag color="error" style={{ borderRadius: 4, border: 'none', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', margin: 0, padding: '0 6px', fontSize: 11 }} icon={<CloseCircleOutlined />}>检测失败</Tag>
             ) : micTestStatus === 'testing' ? (
-              <Tag color="processing">请说话...</Tag>
+              <Tag color="processing" style={{ borderRadius: 4, border: 'none', background: 'rgba(99, 102, 241, 0.15)', color: '#6366f1', margin: 0, padding: '0 6px', fontSize: 11 }}>请说话...</Tag>
             ) : null
           }
         >
-          <Paragraph style={{ fontSize: 11, color: '#8c8c8c', marginBottom: 8 }}>
+          <Paragraph style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.45)', marginBottom: 8, lineHeight: 1.4 }}>
             点击“开始测试”后对麦克风说话，如果下方电平条产生动态波动，则麦克风工作正常。
           </Paragraph>
 
-          <Space direction="vertical" style={{ width: '100%' }} size={8}>
+          <Space direction="vertical" style={{ width: '100%' }} size={10}>
             <Button
               size="small"
-              type={isTestingMic ? 'primary' : 'default'}
-              danger={isTestingMic}
               icon={<AudioOutlined />}
               onClick={handleMicTestToggle}
               disabled={mics.length === 0}
+              className={`btn-premium ${isTestingMic ? 'btn-pulse-mic' : ''}`}
+              style={{
+                height: 28,
+                borderRadius: 6,
+                background: isTestingMic ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                color: '#fff',
+                padding: '0 12px',
+              }}
             >
               {isTestingMic ? '停止测试' : '开始测试'}
             </Button>
 
-            {/* Volume indicator */}
+            {/* Segmented Volume Meter */}
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-                <Text style={{ fontSize: 11, color: '#8c8c8c' }}>实时输入音量</Text>
-                {isTestingMic && <Text style={{ fontSize: 11, color: '#52c41a' }}>{micVolume}%</Text>}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2, alignItems: 'center' }}>
+                <Text style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.45)' }}>实时输入音量</Text>
+                {isTestingMic && <Text style={{ fontSize: 11, color: '#10b981', fontWeight: 600 }}>{micVolume}%</Text>}
               </div>
-              <Progress
-                percent={isTestingMic ? micVolume : 0}
-                size="small"
-                status={isTestingMic ? "active" : "normal"}
-                strokeColor={{
-                  '0%': '#10b981',
-                  '100%': '#3b82f6',
-                }}
-                format={() => ''}
-              />
+              {renderVolumeMeter()}
             </div>
           </Space>
 
@@ -336,7 +540,7 @@ const DeviceCheck: React.FC = () => {
               message="未检测到音量起伏，请检查耳机物理开关、连线，或开启系统麦克风访问权限。"
               type="error"
               showIcon
-              style={{ marginTop: 8, fontSize: 11, padding: '4px 8px' }}
+              style={{ marginTop: 10, fontSize: 10, padding: '4px 8px', borderRadius: 6, background: 'rgba(239, 68, 68, 0.06)', border: '1px solid rgba(239, 68, 68, 0.1)' }}
             />
           )}
 
@@ -346,7 +550,7 @@ const DeviceCheck: React.FC = () => {
               message="麦克风检测成功！音量电平正常，可保障呼叫质量。"
               type="success"
               showIcon
-              style={{ marginTop: 8, fontSize: 11, padding: '4px 8px' }}
+              style={{ marginTop: 10, fontSize: 10, padding: '4px 8px', borderRadius: 6, background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.1)' }}
             />
           )}
         </Card>
@@ -354,8 +558,8 @@ const DeviceCheck: React.FC = () => {
 
       {/* Speaker capability disclaimer for browsers */}
       {!hasAudioOutputSupport() && (
-        <div style={{ marginTop: 10 }}>
-          <Text type="secondary" style={{ fontSize: 10 }}>
+        <div style={{ marginTop: 10, padding: '0 4px' }}>
+          <Text type="secondary" style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.3)' }}>
             注：当前环境仅支持系统默认扬声器，无法在此选择其他输出设备通道。
           </Text>
         </div>
