@@ -98,7 +98,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: C:/pjsip-install
-          key: ${{ runner.os }}-pjsip-v2.14-v2
+          key: ${{ runner.os }}-pjsip-v2.14-v3
 
       - name: Build PJSIP from source (if not cached)
         if: steps.cache-pjsip.outputs.cache-hit != 'true'
@@ -106,7 +106,7 @@ jobs:
         run: |
           git clone --depth 1 --branch 2.14 https://github.com/pjsip/pjproject.git
           cd pjproject
-          ./configure --prefix=/C/pjsip-install --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --disable-video --disable-libyuv --disable-sound
+          ./configure --prefix=C:/pjsip-install --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --disable-video --disable-libyuv --disable-sound
           make dep
           make -j4
           make install
