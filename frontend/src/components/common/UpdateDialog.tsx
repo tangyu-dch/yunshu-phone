@@ -52,6 +52,66 @@ const UpdateDialog: React.FC = () => {
     }
   }, [])
 
+  // Inject custom stylesheet for dark theme glassmorphic modal
+  useEffect(() => {
+    const styleSheet = document.createElement('style');
+    styleSheet.setAttribute('id', 'update-dialog-styles');
+    styleSheet.textContent = `
+      .update-modal .ant-modal-content {
+        background: rgba(24, 24, 27, 0.85) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.08) !important;
+        backdrop-filter: blur(24px) !important;
+        -webkit-backdrop-filter: blur(24px) !important;
+      }
+      .update-modal .ant-modal-header {
+        background: transparent !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+        padding: 20px 24px 16px !important;
+      }
+      .update-modal .ant-modal-body {
+        padding: 16px 24px 20px !important;
+      }
+      .update-modal .ant-modal-footer {
+        background: transparent !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+        padding: 12px 24px 16px !important;
+      }
+      .update-modal .ant-modal-footer .ant-btn-primary {
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35) !important;
+      }
+      .update-modal .ant-modal-footer .ant-btn-primary:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 16px rgba(99, 102, 241, 0.45) !important;
+      }
+      .update-modal .ant-modal-footer .ant-btn-default {
+        background: rgba(255, 255, 255, 0.06) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 8px !important;
+        color: rgba(255, 255, 255, 0.75) !important;
+        font-weight: 500 !important;
+      }
+      .update-modal .ant-modal-footer .ant-btn-default:hover {
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: #ffffff !important;
+      }
+      .update-modal .ant-modal-close {
+        color: rgba(255, 255, 255, 0.45) !important;
+      }
+      .update-modal .ant-modal-close:hover {
+        color: #ffffff !important;
+      }
+    `;
+    document.head.appendChild(styleSheet);
+    return () => {
+      styleSheet.remove();
+    }
+  }, []);
+
   useEffect(() => {
     EventsOn('update:available', handleUpdateAvailable)
     EventsOn('update:check', handleUpdateCheck)
@@ -70,7 +130,7 @@ const UpdateDialog: React.FC = () => {
       EventsOff('update:check')
       EventsOff('update:progress')
     }
-  }, [handleUpdateAvailable, handleUpdateCheck])
+  }, [handleUpdateAvailable, handleUpdateCheck, message])
 
   const handleUpdateNow = async () => {
     if (!updateInfo?.downloadUrl) {
@@ -110,8 +170,8 @@ const UpdateDialog: React.FC = () => {
   return (
     <Modal
       title={
-        <span>
-          <CloudDownloadOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+        <span style={{ color: '#ffffff', fontWeight: 600, fontSize: 15 }}>
+          <CloudDownloadOutlined style={{ marginRight: 8, color: '#a5b4fc' }} />
           发现新版本
         </span>
       }
@@ -119,7 +179,7 @@ const UpdateDialog: React.FC = () => {
       closable={!updateInfo?.forceUpdate}
       maskClosable={!updateInfo?.forceUpdate}
       onCancel={handleLater}
-      className="no-drag"
+      className="no-drag update-modal"
       footer={
         <div style={styles.footer}>
           {isReady ? (
@@ -159,8 +219,8 @@ const UpdateDialog: React.FC = () => {
         {updateInfo && (
           <>
             <div style={styles.versionRow}>
-              <Text strong style={styles.versionLabel}>最新版本：</Text>
-              <Text type="success" strong>v{updateInfo.version}</Text>
+              <span style={styles.versionLabel}>最新版本：</span>
+              <span style={styles.versionText}>v{updateInfo.version}</span>
             </div>
 
             {updateInfo.changelog && (
@@ -176,7 +236,9 @@ const UpdateDialog: React.FC = () => {
 
             {updateInfo.forceUpdate && (
               <div style={styles.forceWarning}>
-                <Text type="warning">此版本为强制更新，必须更新才能继续使用</Text>
+                <span style={{ color: '#ef4444', fontSize: 12, fontWeight: 500 }}>
+                  此版本为强制更新，必须更新才能继续使用
+                </span>
               </div>
             )}
           </>
@@ -187,17 +249,19 @@ const UpdateDialog: React.FC = () => {
             <Progress
               percent={progress.percent}
               status={progress.status === 'error' ? 'exception' : 'active'}
-              strokeColor={{ from: '#667eea', to: '#764ba2' }}
+              strokeColor={{ from: '#6366f1', to: '#4f46e5' }}
             />
-            <Text type="secondary" style={styles.progressText}>
+            <span style={styles.progressText}>
               {progress.message}
-            </Text>
+            </span>
           </div>
         )}
 
         {isReady && (
           <div style={styles.readyBox}>
-            <Text type="success">更新已下载完成，点击"立即重启"完成更新</Text>
+            <span style={{ color: '#10b981', fontSize: 13, fontWeight: 500 }}>
+              更新已下载完成，点击"立即重启"完成更新
+            </span>
           </div>
         )}
       </div>
@@ -212,29 +276,37 @@ const styles: Record<string, React.CSSProperties> = {
   versionRow: {
     display: 'flex',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   versionLabel: {
-    marginRight: 4,
+    marginRight: 8,
+    color: 'rgba(255, 255, 255, 0.55)',
+    fontSize: 13,
+  },
+  versionText: {
+    color: '#10b981',
+    fontWeight: 600,
+    fontSize: 14,
   },
   changelogBox: {
-    background: '#f6f7fb',
+    background: 'rgba(255, 255, 255, 0.03)',
+    border: '1px solid rgba(255, 255, 255, 0.06)',
     borderRadius: 8,
-    padding: '10px 14px',
+    padding: '12px 14px',
     marginBottom: 12,
   },
   changelog: {
     margin: 0,
     fontSize: 13,
-    color: '#555',
+    color: 'rgba(255, 255, 255, 0.8)',
     lineHeight: 1.6,
   },
   forceWarning: {
-    background: '#fff7e6',
+    background: 'rgba(239, 68, 68, 0.1)',
     borderRadius: 6,
     padding: '8px 12px',
     marginBottom: 12,
-    border: '1px solid #ffd591',
+    border: '1px solid rgba(239, 68, 68, 0.2)',
   },
   progressBox: {
     marginTop: 16,
@@ -243,13 +315,14 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 12,
     display: 'block',
     marginTop: 4,
+    color: 'rgba(255, 255, 255, 0.45)',
   },
   readyBox: {
     marginTop: 16,
     padding: '10px 14px',
-    background: '#f6ffed',
+    background: 'rgba(16, 185, 129, 0.1)',
     borderRadius: 6,
-    border: '1px solid #b7eb8f',
+    border: '1px solid rgba(16, 185, 129, 0.2)',
   },
   footer: {
     display: 'flex',
@@ -257,7 +330,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
   },
   btnPrimary: {
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
     border: 'none',
   },
 }

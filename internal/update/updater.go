@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"yunshu-phone/internal/api"
+	"yunshu-phone/internal/config"
 )
 
 // UpdateInfo holds info about an available update
@@ -203,16 +204,13 @@ func (u *Updater) checkAndLog() {
 // buildDownloadURL constructs the download URL for the given version.
 // The URL pattern is based on the API base URL with a version-specific path.
 func (u *Updater) buildDownloadURL(version string) string {
-	cfg := api.Default()
-	_ = cfg // The download URL is typically returned by the API itself.
-	// For now, construct a conventional URL. In production, the API should
-	// return the download URL directly in the version response.
+	apiBase := config.Get().APIBaseURL
 	platform := runtime.GOOS
 	arch := runtime.GOARCH
 
 	// Convention: {apiBase}/mer/version/download/{version}/{platform}/{arch}
 	// This will be overridden if the API provides a direct URL.
-	return fmt.Sprintf("/mer/version/download/%s/%s/%s", version, platform, arch)
+	return fmt.Sprintf("%s/mer/version/download/%s/%s/%s", apiBase, version, platform, arch)
 }
 
 // isNewerVersion compares two semver-like version strings.
