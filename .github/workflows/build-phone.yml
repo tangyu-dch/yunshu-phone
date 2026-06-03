@@ -208,7 +208,7 @@ jobs:
         run: |
           export PKG_CONFIG_PATH="$HOME/pjsip-install/lib/pkgconfig"
           export PKG_CONFIG="$(pwd)/build/pkg-config-static.sh"
-          wails build -platform linux/amd64
+          wails build -platform linux/amd64 -tags webkit2_41
 
       - name: Package Linux AppImage
         run: ./build/package_appimage.sh
