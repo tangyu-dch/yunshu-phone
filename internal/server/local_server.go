@@ -14,16 +14,16 @@ import (
 
 // LocalServer runs a local HTTPS API server for CRM integration
 type LocalServer struct {
-	mu       sync.Mutex
-	server   *http.Server
-	running  bool
-	certDir  string
+	mu      sync.Mutex
+	server  *http.Server
+	running bool
+	certDir string
 
 	// State
-	isCall    bool
+	isCall     bool
 	isAutoCall bool
-	stopCall  bool
-	loggedIn  bool
+	stopCall   bool
+	loggedIn   bool
 	seatNumber string
 
 	// Callbacks

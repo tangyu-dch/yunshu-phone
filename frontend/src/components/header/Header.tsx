@@ -17,6 +17,8 @@ import { logout } from '@/store/userSlice'
 import * as AppBridge from '@wailsjs/go/bridge/AppBridge'
 import { EventsOn, EventsOff } from '@wailsjs/runtime/runtime'
 
+import logo from '@/assets/images/logo.png'
+
 type AgentStatus = 'online' | 'away'
 
 const Header: React.FC = () => {
@@ -100,7 +102,7 @@ const Header: React.FC = () => {
       <div style={styles.left}>
 
         <div style={styles.appIconWrapper}>
-          <i className="iconfont icon-huchu" style={styles.appIcon} />
+          <img src={logo} style={styles.appIcon} alt="logo" />
         </div>
         <span style={styles.appTitle}>云枢</span>
       </div>
@@ -146,7 +148,7 @@ const Header: React.FC = () => {
 
 const styles: Record<string, React.CSSProperties> = {
   header: {
-    height: 42,
+    height: 30,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -160,61 +162,73 @@ const styles: Record<string, React.CSSProperties> = {
   left: {
     display: 'flex',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     paddingLeft: 76,
+    height: '100%',
   },
   appIconWrapper: {
-    width: 18,
-    height: 18,
-    borderRadius: 5,
+    width: 16,
+    height: 16,
+    borderRadius: 4,
     background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(79, 70, 229, 0.25) 100%)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
   appIcon: {
-    fontSize: 11,
-    color: '#a5b4fc',
+    width: '80%',
+    height: '80%',
+    objectFit: 'contain',
+    display: 'block',
   },
   appTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 700,
     color: '#ffffff',
     letterSpacing: 1,
+    lineHeight: 1,
+    position: 'relative',
+    top: '-0.5px',
   },
   right: {
     display: 'flex',
     alignItems: 'center',
     gap: 6,
+    height: '100%',
+    paddingRight: 10,
   },
   userArea: {
     display: 'flex',
     alignItems: 'center',
-    gap: 6,
-    padding: '4px 10px',
-    borderRadius: 8,
+    gap: 4,
+    padding: '2px 6px',
+    borderRadius: 6,
     cursor: 'pointer',
     transition: 'all 0.2s',
+    height: '22px',
   },
   statusDot: {
-    width: 7,
-    height: 7,
+    width: 6,
+    height: 6,
     borderRadius: '50%',
-    display: 'inline-block',
+    display: 'block',
     flexShrink: 0,
   },
   userIcon: {
-    fontSize: 13,
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.65)',
+    display: 'flex',
+    alignItems: 'center',
   },
   username: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 600,
     color: '#e4e4e7',
-    maxWidth: 90,
+    maxWidth: 80,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
+    lineHeight: 1,
   },
   windowControls: {
     display: 'flex',

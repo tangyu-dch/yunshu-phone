@@ -14,17 +14,17 @@ type LoginParams struct {
 }
 
 type LoginResult struct {
-	UserInfo            UserInfo `json:"userInfo"`
-	Token               string   `json:"token"`
-	InactivityDuration  int      `json:"inactivityDurationSec"`
-	WhitelistDomains    string   `json:"whitelistDomains"`
+	UserInfo           UserInfo `json:"userInfo"`
+	Token              string   `json:"token"`
+	InactivityDuration int      `json:"inactivityDurationSec"`
+	WhitelistDomains   string   `json:"whitelistDomains"`
 }
 
 type UserInfo struct {
-	ID           int        `json:"id"`
-	Username     string     `json:"username"`
-	SeatNumber   string     `json:"seatNumber"`
-	RoleDetail   RoleDetail `json:"roleDetail"`
+	ID         int        `json:"id"`
+	Username   string     `json:"username"`
+	SeatNumber string     `json:"seatNumber"`
+	RoleDetail RoleDetail `json:"roleDetail"`
 }
 
 type RoleDetail struct {
@@ -64,8 +64,8 @@ func ReleaseExtension() error {
 // --- SIP Extension ---
 
 type ExtensionInfo struct {
-	Number     string `json:"number"`     // encrypted
-	Password   string `json:"password"`   // encrypted
+	Number     string `json:"number"`   // encrypted
+	Password   string `json:"password"` // encrypted
 	Domain     string `json:"domain"`
 	Port       string `json:"port"`
 	Protocol   string `json:"protocol"`
@@ -143,24 +143,24 @@ type CallPageResult struct {
 }
 
 type CallRecord struct {
-	ID          int    `json:"id"`
-	CalledNum   string `json:"calledNumber"`
-	Status      string `json:"status"`
-	Duration    int    `json:"duration"`
-	Location    string `json:"location"`
-	CreatedAt   string `json:"createdAt"`
+	ID        int    `json:"id"`
+	CalledNum string `json:"calledNumber"`
+	Status    string `json:"status"`
+	Duration  int    `json:"duration"`
+	Location  string `json:"location"`
+	CreatedAt string `json:"createdAt"`
 }
 
 type CallTotalResult struct {
-	TodayTotal       int     `json:"todayTotal"`
-	TodayConnected   int     `json:"todayConnected"`
-	TodayDisconnected int    `json:"todayDisconnected"`
-	MonthTotal       int     `json:"monthTotal"`
-	MonthConnected   int     `json:"monthConnected"`
-	Over30sToday     int     `json:"over30sToday"`
-	Over30sMonth     int     `json:"over30sMonth"`
-	Over30sRateToday float64 `json:"over30sRateToday"`
-	Over30sRateMonth float64 `json:"over30sRateMonth"`
+	TodayTotal        int     `json:"todayTotal"`
+	TodayConnected    int     `json:"todayConnected"`
+	TodayDisconnected int     `json:"todayDisconnected"`
+	MonthTotal        int     `json:"monthTotal"`
+	MonthConnected    int     `json:"monthConnected"`
+	Over30sToday      int     `json:"over30sToday"`
+	Over30sMonth      int     `json:"over30sMonth"`
+	Over30sRateToday  float64 `json:"over30sRateToday"`
+	Over30sRateMonth  float64 `json:"over30sRateMonth"`
 }
 
 // GetCallPage fetches paginated call records

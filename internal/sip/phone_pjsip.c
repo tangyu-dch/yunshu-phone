@@ -146,6 +146,24 @@ int pjsip_phone_init(pjsip_phone *phone,
         status = pjsua_start();
         if (status != PJ_SUCCESS) return -5;
 
+        /* Disable all codecs except PCMA/8000 and PCMU/8000 */
+        unsigned codec_count = 32;
+        pjsua_codec_info codecs[32];
+        status = pjsua_enum_codecs(codecs, &codec_count);
+        if (status == PJ_SUCCESS) {
+            pj_str_t pcma_str = pj_str("PCMA/8000");
+            pj_str_t pcmu_str = pj_str("PCMU/8000");
+            for (unsigned i = 0; i < codec_count; ++i) {
+                if (pj_strstr(&codecs[i].codec_id, &pcma_str) ||
+                    pj_strstr(&codecs[i].codec_id, &pcmu_str)) 
+                {
+                    pjsua_codec_set_priority(&codecs[i].codec_id, 128);
+                } else {
+                    pjsua_codec_set_priority(&codecs[i].codec_id, 0);
+                }
+            }
+        }
+
         pjsua_started = 1;
     } else {
         /* PJSUA already running — just ensure thread is registered. */

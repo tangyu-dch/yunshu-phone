@@ -41,10 +41,10 @@ type LoginParams struct {
 }
 
 type LoginResult struct {
-	UserInfo            api.UserInfo `json:"userInfo"`
-	Token               string       `json:"token"`
-	InactivityDuration  int          `json:"inactivityDurationSec"`
-	WhitelistDomains    string       `json:"whitelistDomains"`
+	UserInfo           api.UserInfo `json:"userInfo"`
+	Token              string       `json:"token"`
+	InactivityDuration int          `json:"inactivityDurationSec"`
+	WhitelistDomains   string       `json:"whitelistDomains"`
 }
 
 // Login performs the dialpad login, validates extension, and initializes connections

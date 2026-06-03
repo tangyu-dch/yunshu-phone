@@ -15,7 +15,10 @@ const (
 
 // --- AES-ECB low-level ---
 
-func ecbEncryptBlock(block, dst, src []byte, cipher interface{ BlockSize() int; Encrypt(dst, src []byte) }) {
+func ecbEncryptBlock(block, dst, src []byte, cipher interface {
+	BlockSize() int
+	Encrypt(dst, src []byte)
+}) {
 	cipher.Encrypt(dst, src)
 }
 

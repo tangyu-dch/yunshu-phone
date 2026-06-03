@@ -114,7 +114,7 @@ func (b *UpdateBridge) RestartApp() {
 		if b.appBridge != nil {
 			b.appBridge.SetExitConfirmed(true)
 		}
-		
+
 		// 自动拉起新版本的云枢客户端程序（后台启动）
 		if err := b.relaunch(); err != nil {
 			log.Printf("[UpdateBridge] 自动重启客户端失败: %v", err)
@@ -151,4 +151,3 @@ func (b *UpdateBridge) relaunch() error {
 
 	return cmd.Start()
 }
-

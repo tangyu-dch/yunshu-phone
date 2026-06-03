@@ -10,6 +10,7 @@ import (
 	"yunshu-phone/internal/bridge"
 	"yunshu-phone/internal/config"
 	"yunshu-phone/internal/core"
+	"yunshu-phone/internal/menu"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -60,6 +61,7 @@ func main() {
 		BackgroundColour: &options.RGBA{R: 0, G: 0, B: 0, A: 0},
 		Frameless:        false,
 		AlwaysOnTop:      false,
+		Menu:             menu.CreateMenu(),
 		Mac: &mac.Options{
 			TitleBar:             mac.TitleBarHidden(),
 			WebviewIsTransparent: true,
@@ -69,7 +71,9 @@ func main() {
 
 		OnStartup: func(ctx context.Context) {
 			log.Println("[Main] App starting up...")
+			menu.SetContext(ctx)
 			appCore.Init(ctx)
+
 			appBridge.Startup(ctx)
 			callBridge.Startup(ctx)
 			updateBridge.Startup(ctx)

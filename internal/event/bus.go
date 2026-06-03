@@ -16,11 +16,11 @@ const (
 	SIPDisconnected  Type = "sip:disconnected"
 
 	// Call events
-	CallStateChanged Type = "call:state"   // payload: CallState string
+	CallStateChanged Type = "call:state"    // payload: CallState string
 	CallIncoming     Type = "call:incoming" // payload: displayNumber
 	CallProgress     Type = "call:progress" // payload: displayNumber
 	CallAnswered     Type = "call:answered"
-	CallEnded        Type = "call:ended" // payload: reason string
+	CallEnded        Type = "call:ended"  // payload: reason string
 	CallFailed       Type = "call:failed" // payload: {code, reason}
 	CallDTMF         Type = "call:dtmf"
 

@@ -98,7 +98,7 @@ const Index: React.FC = () => {
           top: 0,
           left: 0,
           right: '150px', // Leave 150px on the right for the interactive merchant user dropdown and controls!
-          height: '42px',
+          height: '30px',
           zIndex: 10,
         }}
       />

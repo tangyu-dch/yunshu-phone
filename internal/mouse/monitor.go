@@ -7,20 +7,20 @@ import (
 
 // Monitor tracks mouse/keyboard activity and triggers callbacks on inactivity
 type Monitor struct {
-	mu              sync.Mutex
-	lastActivity    time.Time
+	mu                sync.Mutex
+	lastActivity      time.Time
 	inactivityTimeout time.Duration
-	timer           *time.Timer
-	onInactive      func()
-	onActive        func()
-	isInactive      bool
-	running         bool
+	timer             *time.Timer
+	onInactive        func()
+	onActive          func()
+	isInactive        bool
+	running           bool
 }
 
 // NewMonitor creates a new mouse activity monitor
 func NewMonitor(timeout time.Duration) *Monitor {
 	return &Monitor{
-		lastActivity:    time.Now(),
+		lastActivity:      time.Now(),
 		inactivityTimeout: timeout,
 	}
 }

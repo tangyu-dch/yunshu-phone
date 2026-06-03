@@ -7,6 +7,7 @@ import { login } from '@/store/userSlice'
 import * as AppBridge from '@wailsjs/go/bridge/AppBridge'
 import { config } from '@wailsjs/go/models'
 import { Modal } from 'antd'
+import logo from '@/assets/images/logo.png'
 
 interface LoginForm {
   account: string
@@ -199,7 +200,7 @@ const Login: React.FC = () => {
             top: 0,
             left: 0,
             right: 0,
-            height: '42px',
+            height: '30px',
             zIndex: 10,
             display: 'flex',
             justifyContent: 'flex-end',
@@ -215,7 +216,7 @@ const Login: React.FC = () => {
         {/* Logo and title */}
         <div style={styles.header}>
           <div style={styles.logoOuter}>
-            <i className="iconfont icon-huchu" style={styles.logo} />
+            <img src={logo} style={styles.logo} alt="logo" />
           </div>
           <h1 style={styles.title}>云枢</h1>
           <p style={styles.subtitle}>智能外呼系统 • 桌面版</p>
@@ -414,21 +415,19 @@ const styles: Record<string, React.CSSProperties> = {
   logoOuter: {
     width: 68,
     height: 68,
-    borderRadius: '50%',
-    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(79, 70, 229, 0.2) 100%)',
-    border: '1px solid rgba(99, 102, 241, 0.35)',
+    borderRadius: 18,
+    background: 'rgba(255, 255, 255, 0.03)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 14,
-    boxShadow: '0 0 20px rgba(99, 102, 241, 0.25)',
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
   },
   logo: {
-    fontSize: 34,
-    background: 'linear-gradient(135deg, #a5b4fc 0%, #818cf8 100%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    display: 'block',
+    width: '75%',
+    height: '75%',
+    objectFit: 'contain',
   },
   title: {
     fontSize: 24,

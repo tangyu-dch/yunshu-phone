@@ -8,6 +8,7 @@ import zhCN from 'antd/locale/zh_CN'
 import Login from './components/login/Login'
 import Index from './components/index/Index'
 import UpdateDialog from './components/common/UpdateDialog'
+import AboutDialog from './components/common/AboutDialog'
 import { RootState } from './store'
 import { logout } from './store/userSlice'
 import { EventsOn } from '@wailsjs/runtime/runtime'
@@ -79,6 +80,7 @@ function App() {
       <AntdApp>
         <HashRouter>
           <UpdateDialog />
+          <AboutDialog />
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route

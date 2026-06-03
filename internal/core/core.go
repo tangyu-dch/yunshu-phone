@@ -33,25 +33,25 @@ type ConnStep struct {
 type AppState struct {
 	mu sync.RWMutex
 
-	LoggedIn     bool   `json:"loggedIn"`
-	UserInfo     *api.UserInfo `json:"userInfo,omitempty"`
-	Token        string `json:"token,omitempty"`
-	SeatNumber   string `json:"seatNumber,omitempty"`
-	AppVersion   string `json:"appVersion"`
-	IsCall       bool   `json:"isCall"`
-	IsAutoCall   bool   `json:"isAutoCall"`
-	StopCall     bool   `json:"stopCall"`
-	InactiveDuration int `json:"inactivityDurationSec"`
+	LoggedIn         bool          `json:"loggedIn"`
+	UserInfo         *api.UserInfo `json:"userInfo,omitempty"`
+	Token            string        `json:"token,omitempty"`
+	SeatNumber       string        `json:"seatNumber,omitempty"`
+	AppVersion       string        `json:"appVersion"`
+	IsCall           bool          `json:"isCall"`
+	IsAutoCall       bool          `json:"isAutoCall"`
+	StopCall         bool          `json:"stopCall"`
+	InactiveDuration int           `json:"inactivityDurationSec"`
 
 	// Connection steps
 	ConnSteps []ConnStep `json:"connSteps"`
 	ConnReady bool       `json:"connReady"`
 
 	// Call state
-	CallState     string `json:"callState"`     // idle, ringing, in_progress
-	CallNumber    string `json:"callNumber"`
-	CallDuration  int    `json:"callDuration"`
-	CallID        string `json:"callId"`
+	CallState    string `json:"callState"` // idle, ringing, in_progress
+	CallNumber   string `json:"callNumber"`
+	CallDuration int    `json:"callDuration"`
+	CallID       string `json:"callId"`
 
 	// SIP status
 	SIPStatus string `json:"sipStatus"`
@@ -80,22 +80,22 @@ func (s *AppState) HasPermission(perm string) bool {
 // Core is the central application coordinator.
 // It wires all modules together via the event bus and manages global state.
 type Core struct {
-	ctx    context.Context
-	bus    *event.Bus
-	state  AppState
+	ctx   context.Context
+	bus   *event.Bus
+	state AppState
 
 	// Modules
-	phone      sip.Phone
-	wsClient   *ws.Client
+	phone       sip.Phone
+	wsClient    *ws.Client
 	localServer *server.LocalServer
-	mouseMon   *mouse.Monitor
-	headerMon  *mouse.Monitor
+	mouseMon    *mouse.Monitor
+	headerMon   *mouse.Monitor
 
 	// Reconnect control
-	stopReconnect chan struct{}
-	connRetries   int
+	stopReconnect  chan struct{}
+	connRetries    int
 	maxConnRetries int
-	lastSIPParams sip.Params
+	lastSIPParams  sip.Params
 
 	// Call timer
 	callTimerStop chan struct{}
@@ -595,12 +595,12 @@ func (c *Core) handleWSCallPhone(data ws.CallPhoneData) {
 
 	// Forward to frontend with decrypted number
 	c.emitToFrontend("ws:callPhone", map[string]interface{}{
-		"phone":        phone,
-		"type":         data.Type,
-		"extra":        data.Extra,
-		"taskId":       data.TaskID,
-		"taskPhoneId":  data.TaskPhoneID,
-		"userId":       data.UserID,
+		"phone":       phone,
+		"type":        data.Type,
+		"extra":       data.Extra,
+		"taskId":      data.TaskID,
+		"taskPhoneId": data.TaskPhoneID,
+		"userId":      data.UserID,
 	})
 }
 
@@ -942,6 +942,12 @@ func (c *Core) StartLocalServer(certDir string) error {
 func (c *Core) Shutdown() {
 	// 释放分机绑定（在断开连接之前调用，确保服务端能收到请求）
 	c.ReleaseExtension()
+
+	// Stop phone synchronously first to ensure the SIP account is destroyed
+	// before the PJSUA library singleton is shut down.
+	if err := c.phone.Stop(); err != nil {
+		log.Printf("[Core] Stop phone failed: %v", err)
+	}
 
 	c.DisconnectAll()
 

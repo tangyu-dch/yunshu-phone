@@ -20,12 +20,12 @@ type Message struct {
 }
 
 type CallPhoneData struct {
-	Type     string `json:"type"`
-	Phone    string `json:"phone"`
-	Extra    string `json:"extra"`
-	TaskID   string `json:"taskId"`
+	Type        string `json:"type"`
+	Phone       string `json:"phone"`
+	Extra       string `json:"extra"`
+	TaskID      string `json:"taskId"`
 	TaskPhoneID string `json:"taskPhoneId"`
-	UserID   string `json:"userId"`
+	UserID      string `json:"userId"`
 }
 
 type TaskStatusData struct {
@@ -76,21 +76,21 @@ func (s Status) String() string {
 
 // Config holds WebSocket connection configuration
 type Config struct {
-	URL                string
-	Token              string
-	HeartbeatInterval  time.Duration
-	HeartbeatMsg       interface{}
-	ReconnectInterval  time.Duration
+	URL                  string
+	Token                string
+	HeartbeatInterval    time.Duration
+	HeartbeatMsg         interface{}
+	ReconnectInterval    time.Duration
 	MaxReconnectAttempts int
-	Debug              bool
+	Debug                bool
 }
 
 // DefaultConfig returns a Config with sensible defaults
 func DefaultConfig() Config {
 	return Config{
-		HeartbeatInterval:  30 * time.Second,
-		HeartbeatMsg:       map[string]string{"msgType": "ping"},
-		ReconnectInterval:  5 * time.Second,
+		HeartbeatInterval:    30 * time.Second,
+		HeartbeatMsg:         map[string]string{"msgType": "ping"},
+		ReconnectInterval:    5 * time.Second,
 		MaxReconnectAttempts: 5,
 	}
 }
@@ -103,10 +103,10 @@ type StatusHandler func(status Status)
 
 // Client is a production-grade WebSocket client with heartbeat and reconnection
 type Client struct {
-	cfg     Config
-	conn    *websocket.Conn
-	mu      sync.Mutex
-	status  Status
+	cfg    Config
+	conn   *websocket.Conn
+	mu     sync.Mutex
+	status Status
 
 	onMessage MessageHandler
 	onStatus  StatusHandler
@@ -115,7 +115,7 @@ type Client struct {
 	msgQueue []interface{}
 
 	// Control channels
-	closeCh    chan struct{}
+	closeCh     chan struct{}
 	heartbeatCh chan struct{}
 
 	// Reconnection
