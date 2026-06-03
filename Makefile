@@ -20,7 +20,7 @@ dev:
 build:
 	$(WAILS) build
 ifeq ($(shell uname), Darwin)
-	hdiutil create -volname "云枢" -srcfolder build/bin/云枢.app -ov -format UDZO build/bin/云枢.dmg
+	./build/package_dmg.sh
 	rm -rf build/pkg_root && mkdir -p build/pkg_root/Applications
 	cp -R build/bin/云枢.app build/pkg_root/Applications/
 	pkgbuild --root build/pkg_root --install-location / build/bin/云枢.pkg
@@ -30,12 +30,18 @@ endif
 build-prod:
 	BASE_ENV=production $(WAILS) build
 ifeq ($(shell uname), Darwin)
-	hdiutil create -volname "云枢" -srcfolder build/bin/云枢.app -ov -format UDZO build/bin/云枢.dmg
+	./build/package_dmg.sh
 	rm -rf build/pkg_root && mkdir -p build/pkg_root/Applications
 	cp -R build/bin/云枢.app build/pkg_root/Applications/
 	pkgbuild --root build/pkg_root --install-location / build/bin/云枢.pkg
 	rm -rf build/pkg_root
 endif
+
+build-windows:
+	$(WAILS) build -platform windows/amd64 -nsis
+
+build-windows-prod:
+	BASE_ENV=production $(WAILS) build -platform windows/amd64 -nsis
 
 clean:
 	rm -rf build/bin/云枢* build/bin/yunshu-phone*
