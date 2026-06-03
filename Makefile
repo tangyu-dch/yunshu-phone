@@ -18,10 +18,12 @@ endif
 all: help
 
 dev:
-	$(WAILS) dev
+	go env -w PKG_CONFIG=$(shell pwd)/build/pkg-config-static.sh
+	$(WAILS) dev; status=$$?; go env -u PKG_CONFIG; exit $$status
 
 build:
-	$(WAILS) build
+	go env -w PKG_CONFIG=$(shell pwd)/build/pkg-config-static.sh
+	$(WAILS) build; status=$$?; go env -u PKG_CONFIG; if [ $$status -ne 0 ]; then exit $$status; fi
 ifeq ($(shell uname), Darwin)
 	./build/package_dmg.sh
 	rm -rf build/pkg_root && mkdir -p build/pkg_root/Applications
@@ -31,7 +33,8 @@ ifeq ($(shell uname), Darwin)
 endif
 
 build-prod:
-	BASE_ENV=production $(WAILS) build
+	go env -w PKG_CONFIG=$(shell pwd)/build/pkg-config-static.sh
+	BASE_ENV=production $(WAILS) build; status=$$?; go env -u PKG_CONFIG; if [ $$status -ne 0 ]; then exit $$status; fi
 ifeq ($(shell uname), Darwin)
 	./build/package_dmg.sh
 	rm -rf build/pkg_root && mkdir -p build/pkg_root/Applications

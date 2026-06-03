@@ -9,6 +9,7 @@ import {
   UserOutlined,
   LogoutOutlined,
   AudioOutlined,
+  SoundOutlined,
 } from '@ant-design/icons'
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
@@ -131,14 +132,19 @@ const Header: React.FC = () => {
       </div>
 
       <Modal
-        title="音频设备检测与设置"
+        title={
+          <span style={{ color: '#ffffff', fontWeight: 600, fontSize: 14 }}>
+            <SoundOutlined style={{ marginRight: 8, color: '#6366f1' }} />
+            音频设备检测与设置
+          </span>
+        }
         open={isDeviceCheckOpen}
         onCancel={() => setIsDeviceCheckOpen(false)}
         footer={null}
-        width={400}
+        width={340}
         destroyOnClose
         centered
-        className="no-drag"
+        className="no-drag device-check-modal"
       >
         <DeviceCheck />
       </Modal>
