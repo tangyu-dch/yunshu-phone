@@ -19,9 +19,15 @@ dev:
 
 build:
 	$(WAILS) build
+ifeq ($(shell uname), Darwin)
+	hdiutil create -volname "云枢" -srcfolder build/bin/yunshu-phone.app -ov -format UDZO build/bin/yunshu-phone.dmg
+endif
 
 build-prod:
 	BASE_ENV=production $(WAILS) build
+ifeq ($(shell uname), Darwin)
+	hdiutil create -volname "云枢" -srcfolder build/bin/yunshu-phone.app -ov -format UDZO build/bin/yunshu-phone.dmg
+endif
 
 clean:
 	rm -rf build/bin/yunshu-phone*
