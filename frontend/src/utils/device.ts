@@ -128,3 +128,90 @@ export async function testMicrophone(
 export function hasAudioOutputSupport(): boolean {
   return 'setSinkId' in HTMLAudioElement.prototype
 }
+
+/**
+ * Play a synthesized high-end test chime using Web Audio API.
+ * Respects the selected deviceId if setSinkId is supported.
+ */
+export function playTestSound(deviceId?: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
+      const ctx = new AudioCtx()
+      
+      // Create oscillator and gain node
+      const osc1 = ctx.createOscillator()
+      const osc2 = ctx.createOscillator()
+      const gainNode = ctx.createGain()
+      
+      osc1.type = 'sine'
+      osc1.frequency.setValueAtTime(480, ctx.currentTime) // F4
+      osc1.frequency.exponentialRampToValueAtTime(960, ctx.currentTime + 0.12)
+      
+      osc2.type = 'sine'
+      osc2.frequency.setValueAtTime(600, ctx.currentTime) // D5
+      osc2.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.12)
+      
+      // Control volume envelopes
+      gainNode.gain.setValueAtTime(0, ctx.currentTime)
+      gainNode.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.05)
+      gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6)
+      
+      osc1.connect(gainNode)
+      osc2.connect(gainNode)
+      
+      // Set sink ID if supported
+      if (deviceId && 'setSinkId' in HTMLAudioElement.prototype) {
+        // Create an audio destination node that can bind sinkId
+        // In standard Web Audio, we bind setSinkId to HTMLAudioElement,
+        // so we route Web Audio into a MediaStreamAudioDestinationNode
+        // and play it via an Audio element to respect the sinkId selection.
+        const dest = ctx.createMediaStreamDestination()
+        gainNode.connect(dest)
+        
+        const audio = new Audio()
+        audio.srcObject = dest.stream
+        ;(audio as any).setSinkId(deviceId)
+          .then(() => {
+            audio.play()
+            osc1.start()
+            osc2.start()
+            osc1.stop(ctx.currentTime + 0.6)
+            osc2.stop(ctx.currentTime + 0.6)
+            setTimeout(() => {
+              ctx.close()
+              audio.pause()
+              audio.srcObject = null
+              resolve()
+            }, 700)
+          })
+          .catch((err: any) => {
+            console.warn('[Device] failed to setSinkId for Web Audio:', err)
+            // Fallback to default destination
+            gainNode.connect(ctx.destination)
+            osc1.start()
+            osc2.start()
+            osc1.stop(ctx.currentTime + 0.6)
+            osc2.stop(ctx.currentTime + 0.6)
+            setTimeout(() => {
+              ctx.close()
+              resolve()
+            }, 700)
+          })
+      } else {
+        gainNode.connect(ctx.destination)
+        osc1.start()
+        osc2.start()
+        osc1.stop(ctx.currentTime + 0.6)
+        osc2.stop(ctx.currentTime + 0.6)
+        setTimeout(() => {
+          ctx.close()
+          resolve()
+        }, 700)
+      }
+    } catch (e) {
+      reject(e)
+    }
+  })
+}
+
