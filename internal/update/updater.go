@@ -60,11 +60,16 @@ func (u *Updater) CheckForUpdate() (*UpdateInfo, error) {
 		return nil, nil
 	}
 
+	changelog := versionInfo.Changelog
+	if changelog == "" {
+		changelog = "New version available: " + latestVersion
+	}
+
 	info := UpdateInfo{
 		Version:     latestVersion,
 		DownloadURL: u.buildDownloadURL(latestVersion),
-		Changelog:   "New version available: " + latestVersion,
-		ForceUpdate: false,
+		Changelog:   changelog,
+		ForceUpdate: versionInfo.ForceUpdate,
 	}
 
 	log.Printf("[Update] New version available: %s -> %s", u.currentVersion, latestVersion)

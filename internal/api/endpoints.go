@@ -239,7 +239,9 @@ func StartTask(body map[string]interface{}) error {
 // --- Version ---
 
 type VersionInfo struct {
-	Version string `json:"version"`
+	Version     string `json:"version"`
+	ForceUpdate bool   `json:"forceUpdate"`
+	Changelog   string `json:"changelog"`
 }
 
 // GetVersion fetches the latest version info

@@ -197,8 +197,22 @@ func NewPJSIPPhone() *PJSIPPhone {
 func (p *PJSIPPhone) pjsipWorker() {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[PJSIP] Worker thread panicked and terminated: %v. Respawning...", r)
+			go p.pjsipWorker()
+		}
+	}()
 	for req := range p.pjsipCh {
-		req.res <- req.fn()
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("[PJSIP] Request execution panicked: %v", r)
+					req.res <- fmt.Errorf("cgo panic: %v", r)
+				}
+			}()
+			req.res <- req.fn()
+		}()
 	}
 }
 
