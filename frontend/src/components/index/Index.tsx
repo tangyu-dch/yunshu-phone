@@ -13,6 +13,7 @@ import Header from '@/components/header/Header';
 import PhoneCall from './components/PhoneCall';
 import CallRecords, { CallRecordsHandle } from './components/CallRecords';
 import AudioUnlockOverlay from '@/components/common/AudioUnlockOverlay';
+import { requestMediaPermission } from '@/utils/device';
 
 const { Text } = Typography;
 
@@ -20,6 +21,18 @@ const TAB_PHONE = 'phone';
 const TAB_RECORDS = 'records';
 
 const Index: React.FC = () => {
+  // ─── 登录进入后，立即自动发起麦克风授权检测与请求（一次性授权） ───────────
+  useEffect(() => {
+    requestMediaPermission().then((granted) => {
+      if (granted) {
+        console.log('[麦克风] 权限检查成功：已获授权');
+      } else {
+        console.warn('[麦克风] 权限检查警告：未获得麦克风授权，可能会影响通话');
+      }
+    }).catch((err) => {
+      console.error('[麦克风] 自动申请授权异常:', err);
+    });
+  }, []);
   const permissions = useSelector(
     (s: RootState) => s.user.userInfo?.roleDetail?.permissions ?? []
   );
