@@ -5,8 +5,7 @@ package sip
 // The actual C implementation resides in phone_pjsip.c.
 // ==========================================================================
 
-// #cgo CFLAGS: -I/opt/homebrew/Cellar/pjproject/2.17/include -DPJ_M_ARM64=1 -DPJ_IS_LITTLE_ENDIAN=1 -DPJ_IS_BIG_ENDIAN=0
-// #cgo LDFLAGS: -L/opt/homebrew/Cellar/pjproject/2.17/lib -L/opt/homebrew/opt/openssl@3/lib -lpjsua2-aarch64-apple-darwin25.4.0 -lpjsua-aarch64-apple-darwin25.4.0 -lpjsip-ua-aarch64-apple-darwin25.4.0 -lpjsip-simple-aarch64-apple-darwin25.4.0 -lpjsip-aarch64-apple-darwin25.4.0 -lpjmedia-codec-aarch64-apple-darwin25.4.0 -lpjmedia-videodev-aarch64-apple-darwin25.4.0 -lpjmedia-audiodev-aarch64-apple-darwin25.4.0 -lpjmedia-aarch64-apple-darwin25.4.0 -lpjnath-aarch64-apple-darwin25.4.0 -lpjlib-util-aarch64-apple-darwin25.4.0 -lpj-aarch64-apple-darwin25.4.0 -lsrtp-aarch64-apple-darwin25.4.0 -lresample-aarch64-apple-darwin25.4.0 -lgsmcodec-aarch64-apple-darwin25.4.0 -lspeex-aarch64-apple-darwin25.4.0 -lilbccodec-aarch64-apple-darwin25.4.0 -lg7221codec-aarch64-apple-darwin25.4.0 -lyuv-aarch64-apple-darwin25.4.0 -lwebrtc-aarch64-apple-darwin25.4.0 -lssl -lcrypto -lm -lpthread
+// #cgo darwin pkg-config: libpjproject openssl
 // #cgo darwin LDFLAGS: -framework AudioToolbox -framework CoreAudio -framework CoreServices -framework AudioUnit -framework Foundation -framework AppKit -framework AVFoundation -framework CoreGraphics -framework QuartzCore -framework CoreVideo -framework CoreMedia -framework Metal -framework MetalKit -framework VideoToolbox
 //
 // #include "pjsip_bridge.h"

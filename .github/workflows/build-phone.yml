@@ -4,11 +4,13 @@ on:
   push:
     branches:
       - main
+      - dev
     tags:
       - 'v*'
   pull_request:
     branches:
       - main
+      - dev
   workflow_dispatch:
 
 jobs:
@@ -39,6 +41,9 @@ jobs:
 
       - name: Install Wails CLI
         run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.10.2
+
+      - name: Make static wrapper executable
+        run: chmod +x build/pkg-config-static.sh
 
       - name: Install Frontend Dependencies
         run: make install-deps

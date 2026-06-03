@@ -1,5 +1,8 @@
 .PHONY: dev build build-prod clean install-deps doctor help
 
+# Export PKG_CONFIG to force static linking for CGo/pjsip
+export PKG_CONFIG := $(shell pwd)/build/pkg-config-static.sh
+
 # Detect Wails binary path
 WAILS := $(shell which wails 2>/dev/null)
 ifeq ($(WAILS),)
