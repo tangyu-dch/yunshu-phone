@@ -60,9 +60,9 @@ else
     echo "Headless environment detected (GitHub Actions). Skipping Finder AppleScript GUI styling."
 fi
 
-# Unmount and convert to compressed UDZO DMG (force detach if busy, ignore benign eject failures)
+# Unmount and convert to uncompressed UDRO DMG (force detach if busy, ignore benign eject failures)
 hdiutil detach "/Volumes/${APP_NAME}" -force || true
-hdiutil convert "${PACK_DMG}" -format UDZO -imagekey zlib-level=9 -ov -o "${DMG_PATH}"
+hdiutil convert "${PACK_DMG}" -format UDRO -ov -o "${DMG_PATH}"
 rm -f "${PACK_DMG}"
 
 echo "DMG package successfully created at ${DMG_PATH}"

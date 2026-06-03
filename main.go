@@ -25,7 +25,11 @@ var assets embed.FS
 func main() {
 	// Load persisted config (env, etc.)
 	if err := config.Load(); err != nil {
-		log.Printf("[Main] No persisted config, using defaults: %v", err)
+		if os.IsNotExist(err) {
+			log.Println("[Main] Persisted config not found, using default configuration.")
+		} else {
+			log.Printf("[Main] Failed to load persisted config: %v", err)
+		}
 	}
 
 	// Create the core application coordinator
