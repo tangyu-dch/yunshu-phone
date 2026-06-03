@@ -81,24 +81,53 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          path-type: inherit
+          install: >-
+            make
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-openssl
+            mingw-w64-x86_64-pkgconf
+
+      - name: Cache PJSIP
+        id: cache-pjsip
+        uses: actions/cache@v4
+        with:
+          path: C:/pjsip-install
+          key: ${{ runner.os }}-pjsip-v2.14-v2
+
+      - name: Build PJSIP from source (if not cached)
+        if: steps.cache-pjsip.outputs.cache-hit != 'true'
+        shell: msys2 {0}
+        run: |
+          git clone --depth 1 --branch v2.14 https://github.com/pjsip/pjproject.git
+          cd pjproject
+          ./configure --prefix=/C/pjsip-install --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --disable-video --disable-libyuv --disable-sound
+          make dep
+          make -j4
+          make install
+
       - name: Install Wails CLI
+        shell: msys2 {0}
         run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.10.2
 
-      - name: Setup GCC (MinGW)
-        uses: egor-tensin/setup-gcc@v1
-        with:
-          version: 12
-          platform: x64
-
       - name: Install Frontend Dependencies
+        shell: msys2 {0}
         run: |
           cd frontend
           npm ci
 
       - name: Build Windows Application and Installer
+        shell: msys2 {0}
         run: |
-          go run github.com/wailsapp/wails/v2/cmd/wails@v2.10.2 build -platform windows/amd64 -nsis
-        shell: bash
+          export PKG_CONFIG_PATH="/C/pjsip-install/lib/pkgconfig:/mingw64/lib/pkgconfig"
+          export PKG_CONFIG="$(pwd)/build/pkg-config-static.sh"
+          chmod +x build/pkg-config-static.sh
+          wails build -platform windows/amd64 -nsis
 
       - name: Upload Windows Installer
         uses: actions/upload-artifact@v4
