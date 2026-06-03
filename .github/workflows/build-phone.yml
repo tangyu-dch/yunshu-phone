@@ -1,0 +1,105 @@
+name: Yunshu Phone Wails Build
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    name: Build macOS Client (app, dmg, pkg)
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install System Dependencies (macOS)
+        run: |
+          brew install pjproject portaudio speex openssl@3 pkg-config
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.10.2
+
+      - name: Install Frontend Dependencies
+        run: make install-deps
+
+      - name: Build macOS Application and Packages
+        run: make build
+
+      - name: Upload macOS Packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: yunshu-phone-macos
+          path: |
+            build/bin/云枢.dmg
+            build/bin/云枢.pkg
+          if-no-files-found: error
+
+  build-windows:
+    name: Build Windows Client
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.10.2
+
+      - name: Setup GCC (MinGW)
+        uses: egor-tensin/setup-gcc@v1
+        with:
+          version: 12
+          platform: x64
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build Windows Application and Installer
+        run: |
+          go run github.com/wailsapp/wails/v2/cmd/wails@v2.10.2 build -platform windows/amd64 -nsis
+        shell: bash
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: yunshu-phone-windows
+          path: |
+            build/bin/云枢-amd64-installer.exe
+            build/bin/云枢.exe
+          if-no-files-found: warn
