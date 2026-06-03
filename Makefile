@@ -20,17 +20,19 @@ dev:
 build:
 	$(WAILS) build
 ifeq ($(shell uname), Darwin)
-	hdiutil create -volname "云枢" -srcfolder build/bin/yunshu-phone.app -ov -format UDZO build/bin/yunshu-phone.dmg
+	hdiutil create -volname "云枢" -srcfolder build/bin/云枢.app -ov -format UDZO build/bin/云枢.dmg
+	pkgbuild --component build/bin/云枢.app --install-location /Applications build/bin/云枢.pkg
 endif
 
 build-prod:
 	BASE_ENV=production $(WAILS) build
 ifeq ($(shell uname), Darwin)
-	hdiutil create -volname "云枢" -srcfolder build/bin/yunshu-phone.app -ov -format UDZO build/bin/yunshu-phone.dmg
+	hdiutil create -volname "云枢" -srcfolder build/bin/云枢.app -ov -format UDZO build/bin/云枢.dmg
+	pkgbuild --component build/bin/云枢.app --install-location /Applications build/bin/云枢.pkg
 endif
 
 clean:
-	rm -rf build/bin/yunshu-phone*
+	rm -rf build/bin/云枢* build/bin/yunshu-phone*
 	cd frontend && rm -rf dist node_modules
 
 install-deps:
