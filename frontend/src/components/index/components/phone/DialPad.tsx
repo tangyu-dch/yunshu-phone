@@ -171,7 +171,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    padding: '20px 16px',
+    padding: '36px 16px',
     userSelect: 'none',
     fontFamily: "'Outfit', 'Inter', sans-serif",
   },
