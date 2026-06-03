@@ -5,8 +5,7 @@ package sip
 // The actual C implementation resides in phone_pjsip.c.
 // ==========================================================================
 
-// #cgo darwin pkg-config: libpjproject openssl
-// #cgo windows pkg-config: libpjproject openssl
+// #cgo pkg-config: libpjproject openssl
 // #cgo darwin LDFLAGS: -framework AudioToolbox -framework CoreAudio -framework CoreServices -framework AudioUnit -framework Foundation -framework AppKit -framework AVFoundation -framework CoreGraphics -framework QuartzCore -framework CoreVideo -framework CoreMedia -framework Metal -framework MetalKit -framework VideoToolbox
 //
 // #include "pjsip_bridge.h"

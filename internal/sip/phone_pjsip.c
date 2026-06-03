@@ -1,4 +1,4 @@
-#if defined(__APPLE__) || defined(_WIN32)
+#if defined(__APPLE__) || defined(_WIN32) || defined(__linux__)
 #include <pjsua-lib/pjsua.h>
 #include <pj/log.h>
 #include <stdlib.h>
