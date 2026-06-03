@@ -32,7 +32,7 @@ func main() {
 	// Create bridge instances (frontend <-> Go interface)
 	appBridge := bridge.NewAppBridge(appCore)
 	callBridge := bridge.NewCallBridge(appCore)
-	updateBridge := bridge.NewUpdateBridge(appCore)
+	updateBridge := bridge.NewUpdateBridge(appCore, appBridge)
 
 	// Detect environment from env variable
 	if env := os.Getenv("BASE_ENV"); env == "production" {

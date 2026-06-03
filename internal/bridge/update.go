@@ -3,6 +3,11 @@ package bridge
 import (
 	"context"
 	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"time"
 
 	"yunshu-phone/internal/config"
@@ -15,19 +20,21 @@ import (
 // UpdateBridge handles auto-update operations.
 // Bound to the Wails frontend as "UpdateBridge".
 type UpdateBridge struct {
-	ctx      context.Context
-	core     *core.Core
-	updater  *update.Updater
-	stopCh   chan struct{}
+	ctx       context.Context
+	core      *core.Core
+	updater   *update.Updater
+	stopCh    chan struct{}
+	appBridge *AppBridge
 }
 
 // NewUpdateBridge creates a new update bridge
-func NewUpdateBridge(c *core.Core) *UpdateBridge {
+func NewUpdateBridge(c *core.Core, appBridge *AppBridge) *UpdateBridge {
 	version := config.Get().AppVersion
 	u := update.NewUpdater(version)
 	return &UpdateBridge{
-		core:    c,
-		updater: u,
+		core:      c,
+		updater:   u,
+		appBridge: appBridge,
 	}
 }
 
@@ -103,6 +110,45 @@ func (b *UpdateBridge) RestartApp() {
 		if b.stopCh != nil {
 			close(b.stopCh)
 		}
+		// 版本升级重启时，通知 AppBridge 绕过常规退出弹窗确认
+		if b.appBridge != nil {
+			b.appBridge.SetExitConfirmed(true)
+		}
+		
+		// 自动拉起新版本的云枢客户端程序（后台启动）
+		if err := b.relaunch(); err != nil {
+			log.Printf("[UpdateBridge] 自动重启客户端失败: %v", err)
+		}
+
 		wailsRuntime.Quit(b.ctx)
 	}
 }
+
+// relaunch 自动拉起新程序实例。
+func (b *UpdateBridge) relaunch() error {
+	execPath, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	execPath, err = filepath.EvalSymlinks(execPath)
+	if err != nil {
+		return err
+	}
+
+	var cmd *exec.Cmd
+	// 在 macOS 生产环境下，如果是运行在 .app 包内，我们使用 "open" 命令来优雅拉起 windowed 应用程序
+	if runtime.GOOS == "darwin" && strings.Contains(execPath, ".app/Contents/MacOS/") {
+		appIdx := strings.Index(execPath, ".app")
+		if appIdx != -1 {
+			appPath := execPath[:appIdx+4]
+			cmd = exec.Command("open", appPath)
+		}
+	}
+
+	if cmd == nil {
+		cmd = exec.Command(execPath)
+	}
+
+	return cmd.Start()
+}
+

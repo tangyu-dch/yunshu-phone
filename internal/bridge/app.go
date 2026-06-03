@@ -219,6 +219,11 @@ func (b *AppBridge) IsExitConfirmed() bool {
 	return b.exitConfirmed
 }
 
+// SetExitConfirmed 外部接口用于直接更新退出确认状态标记，例如在版本升级重启时绕过确认弹窗。
+func (b *AppBridge) SetExitConfirmed(val bool) {
+	b.exitConfirmed = val
+}
+
 // ShowWindow brings the window to front
 func (b *AppBridge) ShowWindow() {
 	wailsRuntime.WindowShow(b.ctx)
