@@ -41,9 +41,9 @@ export async function getAudioDevices(): Promise<AudioDevice[]> {
     (d) => d.kind === 'audioinput' || d.kind === 'audiooutput'
   )
 
-  // If labels are empty, request permission and re-enumerate
+  // If labels are empty or no devices found, request permission and re-enumerate
   const hasLabels = audioDevices.some((d) => d.label.length > 0)
-  if (!hasLabels && audioDevices.length > 0) {
+  if (!hasLabels || audioDevices.length === 0) {
     const granted = await requestMediaPermission()
     if (granted) {
       devices = await navigator.mediaDevices.enumerateDevices()
