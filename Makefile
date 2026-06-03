@@ -21,14 +21,20 @@ build:
 	$(WAILS) build
 ifeq ($(shell uname), Darwin)
 	hdiutil create -volname "云枢" -srcfolder build/bin/云枢.app -ov -format UDZO build/bin/云枢.dmg
-	pkgbuild --component build/bin/云枢.app --install-location /Applications build/bin/云枢.pkg
+	rm -rf build/pkg_root && mkdir -p build/pkg_root/Applications
+	cp -R build/bin/云枢.app build/pkg_root/Applications/
+	pkgbuild --root build/pkg_root --install-location / build/bin/云枢.pkg
+	rm -rf build/pkg_root
 endif
 
 build-prod:
 	BASE_ENV=production $(WAILS) build
 ifeq ($(shell uname), Darwin)
 	hdiutil create -volname "云枢" -srcfolder build/bin/云枢.app -ov -format UDZO build/bin/云枢.dmg
-	pkgbuild --component build/bin/云枢.app --install-location /Applications build/bin/云枢.pkg
+	rm -rf build/pkg_root && mkdir -p build/pkg_root/Applications
+	cp -R build/bin/云枢.app build/pkg_root/Applications/
+	pkgbuild --root build/pkg_root --install-location / build/bin/云枢.pkg
+	rm -rf build/pkg_root
 endif
 
 clean:
