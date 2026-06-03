@@ -51,13 +51,18 @@ jobs:
       - name: Build macOS Application and Packages
         run: make build
 
-      - name: Upload macOS Packages
+      - name: Upload macOS DMG
         uses: actions/upload-artifact@v4
         with:
-          name: yunshu-phone-macos
-          path: |
-            build/bin/云枢.dmg
-            build/bin/云枢.pkg
+          name: yunshu-phone-macos-dmg
+          path: build/bin/云枢.dmg
+          if-no-files-found: error
+
+      - name: Upload macOS PKG
+        uses: actions/upload-artifact@v4
+        with:
+          name: yunshu-phone-macos-pkg
+          path: build/bin/云枢.pkg
           if-no-files-found: error
 
   build-windows:
@@ -131,8 +136,65 @@ jobs:
       - name: Upload Windows Installer
         uses: actions/upload-artifact@v4
         with:
-          name: yunshu-phone-windows
-          path: |
-            build/bin/云枢-amd64-installer.exe
-            build/bin/云枢.exe
-          if-no-files-found: warn
+          name: yunshu-phone-windows-installer
+          path: build/bin/云枢-amd64-installer.exe
+          if-no-files-found: error
+
+      - name: Upload Windows EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: yunshu-phone-windows-exe
+          path: build/bin/云枢.exe
+          if-no-files-found: error
+
+  build-linux:
+    name: Build Linux Client (AppImage)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install System Dependencies (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libpjproject-dev portaudio19-dev libspeex-dev libssl-dev pkg-config wget
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.10.2
+
+      - name: Make scripts executable
+        run: |
+          chmod +x build/pkg-config-static.sh
+          chmod +x build/package_appimage.sh
+
+      - name: Install Frontend Dependencies
+        run: make install-deps
+
+      - name: Build Linux Application
+        run: |
+          export PKG_CONFIG="$(pwd)/build/pkg-config-static.sh"
+          wails build -platform linux/amd64
+
+      - name: Package Linux AppImage
+        run: ./build/package_appimage.sh
+
+      - name: Upload Linux AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: yunshu-phone-linux-appimage
+          path: build/bin/云枢-x86_64.AppImage
+          if-no-files-found: error
