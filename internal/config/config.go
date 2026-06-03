@@ -17,6 +17,9 @@ const (
 	EnvCustom     Environment = "custom"
 )
 
+// Version is the compiled-in version of the application
+const Version = "1.0.0"
+
 // Config holds all application configuration
 type Config struct {
 	Env Environment `json:"env"`
@@ -75,6 +78,7 @@ var envConfigs = map[Environment]*Config{
 func Get() *Config {
 	once.Do(func() {
 		instance = envConfigs[EnvLocal] // default to local
+		instance.AppVersion = Version
 	})
 	return instance
 }
@@ -159,6 +163,9 @@ func Load() error {
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		return err
 	}
+
+	// Always enforce the current compiled-in app version to prevent old persisted config from overriding it
+	cfg.AppVersion = Version
 
 	mu.Lock()
 	defer mu.Unlock()

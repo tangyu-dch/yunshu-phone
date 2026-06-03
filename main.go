@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"yunshu-phone/internal/api"
 	"yunshu-phone/internal/bridge"
 	"yunshu-phone/internal/config"
 	"yunshu-phone/internal/core"
@@ -42,6 +43,9 @@ func main() {
 	} else {
 		config.SetEnv(config.EnvLocal)
 	}
+
+	// Synchronize current app version to the API client headers
+	api.Default().SetVersion(config.Get().AppVersion)
 
 	// Wails application options
 	err := wails.Run(&options.App{
