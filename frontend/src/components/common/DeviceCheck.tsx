@@ -48,7 +48,7 @@ const DeviceCheck: React.FC = () => {
   const mics = devices.filter((d) => d.kind === 'audioinput')
   const speakers = devices.filter((d) => d.kind === 'audiooutput')
 
-  // 组件挂载时，动态注入云枢专属的极简高感度样式定义，包括 Modal 暗色模糊背景的深度定制
+  // 组件挂载时，动态注入云枢专属的极简样式定义，包括 Modal 暗色模糊背景与下拉面板的深度定制
   useEffect(() => {
     const id = 'device-check-styles'
     if (!document.getElementById(id)) {
@@ -74,9 +74,9 @@ const DeviceCheck: React.FC = () => {
           border: 1px solid rgba(255, 255, 255, 0.08) !important;
           border-radius: 6px !important;
           color: #f4f4f5 !important;
-          height: 28px !important;
-          padding: 0 8px !important;
-          font-size: 11px !important;
+          height: 32px !important;
+          padding: 0 10px !important;
+          font-size: 12px !important;
           transition: all 0.2s !important;
         }
         .premium-select.ant-select-focused .ant-select-selector,
@@ -86,10 +86,10 @@ const DeviceCheck: React.FC = () => {
         }
         .premium-select .ant-select-arrow {
           color: rgba(255, 255, 255, 0.4) !important;
-          font-size: 9px !important;
+          font-size: 10px !important;
         }
         .premium-select .ant-select-selection-item {
-          line-height: 26px !important;
+          line-height: 30px !important;
         }
         .btn-premium {
           border-radius: 6px !important;
@@ -106,9 +106,41 @@ const DeviceCheck: React.FC = () => {
           animation: pulse-red 1.5s infinite;
         }
         
+        /* 下拉选项弹窗的美化定制，对齐云枢暗色毛玻璃设计 */
+        .premium-select-dropdown {
+          background: rgba(24, 24, 27, 0.96) !important;
+          border: 1px solid rgba(255, 255, 255, 0.08) !important;
+          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5) !important;
+          border-radius: 8px !important;
+          padding: 4px !important;
+          backdrop-filter: blur(16px) !important;
+          -webkit-backdrop-filter: blur(16px) !important;
+        }
+        .premium-select-dropdown .ant-select-item {
+          color: rgba(255, 255, 255, 0.7) !important;
+          font-size: 11px !important;
+          padding: 6px 10px !important;
+          border-radius: 4px !important;
+          transition: all 0.15s ease !important;
+        }
+        .premium-select-dropdown .ant-select-item-option-active {
+          background: rgba(255, 255, 255, 0.06) !important;
+          color: #ffffff !important;
+        }
+        .premium-select-dropdown .ant-select-item-option-selected {
+          background: rgba(99, 102, 241, 0.15) !important;
+          color: #6366f1 !important;
+          font-weight: 600 !important;
+        }
+        .premium-select-dropdown .ant-select-empty {
+          color: rgba(255, 255, 255, 0.35) !important;
+          font-size: 11px !important;
+          padding: 8px !important;
+        }
+        
         /* 深度穿透覆盖 Ant Modal 的暗色毛玻璃与渐变边框，对齐整体云枢科技质感 */
         .device-check-modal .ant-modal-content {
-          background: rgba(20, 20, 23, 0.9) !important;
+          background: rgba(20, 20, 23, 0.95) !important;
           border: 1px solid rgba(255, 255, 255, 0.08) !important;
           box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.06) !important;
           backdrop-filter: blur(24px) !important;
@@ -121,7 +153,7 @@ const DeviceCheck: React.FC = () => {
           padding: 12px 14px 8px !important;
         }
         .device-check-modal .ant-modal-body {
-          padding: 10px 14px 14px !important;
+          padding: 12px 14px 14px !important;
         }
         .device-check-modal .ant-modal-close {
           color: rgba(255, 255, 255, 0.45) !important;
@@ -396,7 +428,7 @@ const DeviceCheck: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: '2px 0 0 0', animation: 'fadeIn 0.25s ease-in-out', display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div style={{ padding: '2px 0 0 0', animation: 'fadeIn 0.25s ease-in-out', display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* 顶部引导说明与刷新按钮 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.45)' }}>
@@ -414,27 +446,24 @@ const DeviceCheck: React.FC = () => {
         </Button>
       </div>
 
-      {/* 设备选单配置区块：扁平玻璃底色 */}
+      {/* 设备选单配置区块：全宽叠放布局 */}
       <div style={{ 
-        background: 'rgba(255, 255, 255, 0.02)', 
-        border: '1px solid rgba(255, 255, 255, 0.05)', 
-        borderRadius: 8, 
-        padding: '10px 12px',
         display: 'flex',
         flexDirection: 'column',
-        gap: 8
+        gap: 10
       }}>
         {/* 输出扬声器选择 */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: 80, flexShrink: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <SoundOutlined style={{ color: '#6366f1', fontSize: 13 }} />
-            <span style={{ fontSize: 11, color: '#e4e4e7' }}>输出/扬声器</span>
+            <span style={{ fontSize: 11, fontWeight: 500, color: 'rgba(255, 255, 255, 0.7)' }}>输出设备 (听筒/扬声器)</span>
           </div>
           <Select
             size="small"
             className="premium-select"
-            style={{ flex: 1 }}
-            placeholder="选择输出设备"
+            popupClassName="premium-select-dropdown"
+            style={{ width: '100%' }}
+            placeholder="选择音频输出设备"
             value={selectedSpeaker}
             onChange={(v) => setSelectedSpeaker(v)}
             disabled={speakers.length === 0}
@@ -449,16 +478,17 @@ const DeviceCheck: React.FC = () => {
         </div>
 
         {/* 输入麦克风选择 */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: 80, flexShrink: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <AudioOutlined style={{ color: '#8b5cf6', fontSize: 13 }} />
-            <span style={{ fontSize: 11, color: '#e4e4e7' }}>输入/麦克风</span>
+            <span style={{ fontSize: 11, fontWeight: 500, color: 'rgba(255, 255, 255, 0.7)' }}>输入设备 (麦克风)</span>
           </div>
           <Select
             size="small"
             className="premium-select"
-            style={{ flex: 1 }}
-            placeholder="选择输入设备"
+            popupClassName="premium-select-dropdown"
+            style={{ width: '100%' }}
+            placeholder="选择音频输入设备"
             value={selectedMic}
             onChange={(v) => setSelectedMic(v)}
             disabled={mics.length === 0}
@@ -473,21 +503,19 @@ const DeviceCheck: React.FC = () => {
         </div>
       </div>
 
-      {/* 实时动态测试区块 */}
+      <Divider style={{ margin: '6px 0', borderColor: 'rgba(255, 255, 255, 0.05)' }} />
+
+      {/* 实时动态测试区块：扁平列表行 */}
       <div style={{ 
-        background: 'rgba(255, 255, 255, 0.02)', 
-        border: '1px solid rgba(255, 255, 255, 0.05)', 
-        borderRadius: 8, 
-        padding: '10px 12px',
         display: 'flex',
         flexDirection: 'column',
-        gap: 10
+        gap: 12
       }}>
         {/* 扬声器播放测试 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: 12, fontWeight: 600, color: '#f4f4f5' }}>扬声器测试</div>
-            <div style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.3)' }}>点按“测试音”确认是否听到声响</div>
+            <div style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.35)' }}>播放测试音确认耳机有声音</div>
           </div>
           <Button
             type="default"
@@ -498,27 +526,25 @@ const DeviceCheck: React.FC = () => {
             disabled={speakers.length === 0}
             className={`btn-premium ${isPlayingSound ? 'btn-pulse-speaker' : ''}`}
             style={{
-              height: 24,
+              height: 26,
               fontSize: 11,
               borderRadius: 6,
               background: isPlayingSound ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'rgba(255, 255, 255, 0.04)',
               border: '1px solid rgba(255, 255, 255, 0.06)',
               color: '#fff',
-              padding: '0 10px',
+              padding: '0 12px',
             }}
           >
             {isPlayingSound ? '播放中' : '测试音'}
           </Button>
         </div>
 
-        <div style={{ height: 1, background: 'rgba(255, 255, 255, 0.04)' }} />
-
         {/* 麦克风录音与波形测试 */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: '#f4f4f5' }}>麦克风测试</div>
-              <div style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.3)' }}>发出声音，确认下方电平有跳变</div>
+              <div style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.35)' }}>发出声音，确认下方电平有跳变</div>
             </div>
             <Button
               size="small"
@@ -527,13 +553,13 @@ const DeviceCheck: React.FC = () => {
               disabled={mics.length === 0}
               className={`btn-premium ${isTestingMic ? 'btn-pulse-mic' : ''}`}
               style={{
-                height: 24,
+                height: 26,
                 fontSize: 11,
                 borderRadius: 6,
                 background: isTestingMic ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'rgba(255, 255, 255, 0.04)',
                 border: '1px solid rgba(255, 255, 255, 0.06)',
                 color: '#fff',
-                padding: '0 10px',
+                padding: '0 12px',
               }}
             >
               {isTestingMic ? '停止' : '开始'}
@@ -584,7 +610,7 @@ const DeviceCheck: React.FC = () => {
 
       {/* 针对部分浏览器的免责声明 */}
       {!hasAudioOutputSupport() && (
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: 4, marginTop: 2 }}>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: 4 }}>
           <Text type="secondary" style={{ fontSize: 9, color: 'rgba(255, 255, 255, 0.2)', display: 'block', textAlign: 'center' }}>
             注：当前环境由系统默认管理音轨出口，不支持手动指定。
           </Text>
