@@ -1,3 +1,4 @@
+#if defined(__APPLE__)
 #include <pjsua-lib/pjsua.h>
 #include <pj/log.h>
 #include <stdlib.h>
@@ -550,3 +551,32 @@ static void cb_on_incoming_call(pjsua_acc_id acc_id,
 
     goCallCallback(5, caller_buf);  /* incoming */
 }
+#else
+
+#include "pjsip_bridge.h"
+#include <stdlib.h>
+
+pjsip_phone* pjsip_phone_create(void) { return NULL; }
+int pjsip_phone_init(pjsip_phone *phone,
+                     const char *domain, int port,
+                     const char *protocol,
+                     const char *username,
+                     const char *password,
+                     const char *proxy) { return -1; }
+int pjsip_phone_register(pjsip_phone *phone) { return -1; }
+int pjsip_phone_call(pjsip_phone *phone,
+                     const char *number,
+                     const char *extra_headers_json) { return -1; }
+int pjsip_phone_answer(pjsip_phone *phone) { return -1; }
+int pjsip_phone_hangup(pjsip_phone *phone,
+                       const char *reason,
+                       const char *hangup_header) { return -1; }
+int pjsip_phone_send_dtmf(pjsip_phone *phone, const char *digits) { return -1; }
+void pjsip_phone_destroy(pjsip_phone *phone) {}
+void pjsip_bridge_shutdown(void) {}
+int pjsip_phone_get_reg_status(pjsip_phone *phone) { return -1; }
+int pjsip_phone_get_call_state(pjsip_phone *phone) { return 0; }
+void pjsip_phone_set_reg_callback(pjsip_phone *phone, reg_callback_t cb) {}
+void pjsip_phone_set_call_callback(pjsip_phone *phone, call_callback_t cb) {}
+
+#endif
