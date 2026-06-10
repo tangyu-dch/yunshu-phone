@@ -116,4 +116,7 @@ type Phone interface {
 	GetCallState() CallState
 	SetCallCallbacks(cb CallCallbacks)
 	SetRegCallbacks(cb RegCallbacks)
+
+	// RegChan 返回用于等待注册事件的channel
+	RegChan() <-chan RegStatus
 }

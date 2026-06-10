@@ -131,9 +131,22 @@ func (c *Core) Init(ctx context.Context) {
 func (c *Core) GetState() AppState {
 	c.state.mu.RLock()
 	defer c.state.mu.RUnlock()
+
+	var userInfoCopy *api.UserInfo
+	if c.state.UserInfo != nil {
+		copy := *c.state.UserInfo
+		userInfoCopy = &copy
+	}
+
+	connStepsCopy := make([]ConnStep, len(c.state.ConnSteps))
+	copy(connStepsCopy, c.state.ConnSteps)
+
+	permissionsCopy := make([]string, len(c.state.Permissions))
+	copy(permissionsCopy, c.state.Permissions)
+
 	return AppState{
 		LoggedIn:         c.state.LoggedIn,
-		UserInfo:         c.state.UserInfo,
+		UserInfo:         userInfoCopy,
 		Token:            c.state.Token,
 		SeatNumber:       c.state.SeatNumber,
 		AppVersion:       c.state.AppVersion,
@@ -141,7 +154,7 @@ func (c *Core) GetState() AppState {
 		IsAutoCall:       c.state.IsAutoCall,
 		StopCall:         c.state.StopCall,
 		InactiveDuration: c.state.InactiveDuration,
-		ConnSteps:        c.state.ConnSteps,
+		ConnSteps:        connStepsCopy,
 		ConnReady:        c.state.ConnReady,
 		CallState:        c.state.CallState,
 		CallNumber:       c.state.CallNumber,
@@ -150,7 +163,7 @@ func (c *Core) GetState() AppState {
 		SIPStatus:        c.state.SIPStatus,
 		WSStatus:         c.state.WSStatus,
 		AgentOnline:      c.state.AgentOnline,
-		Permissions:      c.state.Permissions,
+		Permissions:      permissionsCopy,
 	}
 }
 
@@ -184,52 +197,12 @@ func (c *Core) setupEventHandlers() {
 
 	// When WS receives logout
 	c.bus.On(event.WSLogout, func(_ interface{}) {
-		c.state.mu.RLock()
-		token := c.state.Token
-		alreadyLoggedOut := !c.state.LoggedIn
-		c.state.mu.RUnlock()
-		if alreadyLoggedOut {
-			return
-		}
-
-		log.Println("[Core] WSLogout received, starting passive logout")
-		// Clear state and notify frontend immediately for instant response
-		c.ClearLoginState()
-		c.emitToFrontend("app:forceLogout", nil)
-
-		// Perform network/SIP cleanup in background
-		go func(tok string) {
-			defer func() { recover() }()
-			if tok != "" {
-				_ = api.ReleaseExtension()
-			}
-			c.DisconnectAll()
-		}(token)
+		c.handleLogout("WS")
 	})
 
 	// When HTTP client receives 401/4011 (token expired)
 	c.bus.On(event.AppLogout, func(_ interface{}) {
-		c.state.mu.RLock()
-		token := c.state.Token
-		alreadyLoggedOut := !c.state.LoggedIn
-		c.state.mu.RUnlock()
-		if alreadyLoggedOut {
-			return
-		}
-
-		log.Println("[Core] AppLogout received, starting passive logout")
-		// Clear state and notify frontend immediately for instant response
-		c.ClearLoginState()
-		c.emitToFrontend("app:forceLogout", nil)
-
-		// Perform network/SIP cleanup in background
-		go func(tok string) {
-			defer func() { recover() }()
-			if tok != "" {
-				_ = api.ReleaseExtension()
-			}
-			c.DisconnectAll()
-		}(token)
+		c.handleLogout("App")
 	})
 
 	// When WS receives system info
@@ -475,9 +448,8 @@ func (c *Core) DisconnectAll() {
 		c.wsClient = nil
 	}
 
-	// Stop phone asynchronously to prevent blocking the UI
-	// if PJSIP is stuck in a DNS or SIP timeout (e.g., due to Fake-IP)
-	go func() {
+	// Stop phone synchronously to prevent race conditions during reconnect/re-init
+	func() {
 		defer func() { recover() }()
 		c.phone.Stop()
 	}()
@@ -513,6 +485,11 @@ func (c *Core) connectWebSocket() error {
 	}
 
 	c.wsClient = ws.NewClient(wsCfg)
+	// 设置指数退避策略
+	c.wsClient.SetReconnectStrategy(ws.ExponentialBackoff(
+		5*time.Second,  // 基础间隔
+		2*time.Minute, // 最大间隔
+	))
 
 	c.wsClient.SetStatusHandler(func(status ws.Status) {
 		c.state.mu.Lock()
@@ -812,17 +789,46 @@ func (c *Core) emitToFrontend(eventName string, data interface{}) {
 	}
 }
 
+// handleLogout 统一处理登出逻辑（从 WSLogout 或 AppLogout 调用）
+func (c *Core) handleLogout(from string) {
+	c.state.mu.RLock()
+	token := c.state.Token
+	alreadyLoggedOut := !c.state.LoggedIn
+	c.state.mu.RUnlock()
+	if alreadyLoggedOut {
+		return
+	}
+
+	log.Printf("[Core] Logout from %s received, starting passive logout", from)
+	// Clear state and notify frontend immediately for instant response
+	c.ClearLoginState()
+	c.emitToFrontend("app:forceLogout", nil)
+
+	// Perform network/SIP cleanup in background
+	go func(tok string) {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("[Core] Panic during logout cleanup: %v", r)
+			}
+		}()
+		if tok != "" {
+			if err := api.ReleaseExtension(); err != nil {
+				log.Printf("[Core] Release extension during logout failed: %v", err)
+			}
+		}
+		c.DisconnectAll()
+	}(token)
+}
+
 func (c *Core) waitForSIPRegistered(timeout time.Duration) bool {
 	deadline := time.After(timeout)
-	ticker := time.NewTicker(200 * time.Millisecond)
-	defer ticker.Stop()
+	regChan := c.phone.RegChan()
 
 	for {
 		select {
 		case <-deadline:
 			return false
-		case <-ticker.C:
-			status := c.phone.GetRegStatus()
+		case status := <-regChan:
 			if status == sip.RegRegistered {
 				return true
 			}
@@ -940,30 +946,57 @@ func (c *Core) StartLocalServer(certDir string) error {
 
 // Shutdown gracefully shuts down everything
 func (c *Core) Shutdown() {
-	// 释放分机绑定（在断开连接之前调用，确保服务端能收到请求）
-	c.ReleaseExtension()
+	log.Println("[Core] Starting shutdown...")
 
-	// Stop phone synchronously first to ensure the SIP account is destroyed
-	// before the PJSUA library singleton is shut down.
-	if err := c.phone.Stop(); err != nil {
-		log.Printf("[Core] Stop phone failed: %v", err)
-	}
+	// 超时保护
+	ctx, cancel := func() (context.Context, context.CancelFunc) {
+		if c.ctx != nil {
+			return context.WithTimeout(c.ctx, 10*time.Second)
+		}
+		return context.WithTimeout(context.Background(), 10*time.Second)
+	}()
+	defer cancel()
 
-	c.DisconnectAll()
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
 
-	// Shut down the PJSUA singleton (process-lifetime cleanup)
-	c.phone.ShutdownPJSUA()
+		// 释放分机绑定（在断开连接之前调用，确保服务端能收到请求）
+		c.ReleaseExtension()
 
-	if c.mouseMon != nil {
-		c.mouseMon.Stop()
+		// Stop phone synchronously first to ensure the SIP account is destroyed
+		// before the PJSUA library singleton is shut down.
+		if err := c.phone.Stop(); err != nil {
+			log.Printf("[Core] Stop phone failed: %v", err)
+		}
+
+		c.DisconnectAll()
+
+		// 停止事件总线
+		if stopBus, ok := interface{}(c.bus).(interface{Stop()}); ok {
+			stopBus.Stop()
+		}
+
+		// Shut down the PJSUA singleton (process-lifetime cleanup)
+		c.phone.ShutdownPJSUA()
+
+		if c.mouseMon != nil {
+			c.mouseMon.Stop()
+		}
+		if c.headerMon != nil {
+			c.headerMon.Stop()
+		}
+		if c.localServer != nil {
+			c.localServer.Stop()
+		}
+	}()
+
+	select {
+	case <-done:
+		log.Println("[Core] Shutdown complete")
+	case <-ctx.Done():
+		log.Println("[Core] Shutdown timed out, forcefully exiting")
 	}
-	if c.headerMon != nil {
-		c.headerMon.Stop()
-	}
-	if c.localServer != nil {
-		c.localServer.Stop()
-	}
-	log.Println("[Core] Shutdown complete")
 }
 
 // ReleaseExtension 调用服务端释放当前坐席绑定的分机。
@@ -980,6 +1013,8 @@ func (c *Core) ReleaseExtension() {
 
 	if err := api.ReleaseExtension(); err != nil {
 		log.Printf("[Core] Release extension failed (may be expected if already released): %v", err)
+		// 通知前端有警告但不影响关闭流程
+		c.emitToFrontend("app:warning", "释放分机失败，不影响退出")
 	} else {
 		log.Println("[Core] Extension released successfully")
 	}

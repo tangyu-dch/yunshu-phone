@@ -1,7 +1,6 @@
-import React, { useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Button, Typography, message } from 'antd';
-import { LoadingOutlined, ReloadOutlined } from '@ant-design/icons';
+import { message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
 import * as AppBridge from '@wailsjs/go/bridge/AppBridge';
@@ -16,6 +15,7 @@ import {
   setConnSteps,
   setIsAutoCall,
   setSipStatus,
+  setWsStatus,
   setAgentOnline,
 } from '@/store/appSlice';
 import { logout } from '@/store/userSlice';
@@ -26,8 +26,7 @@ import DialPad from './phone/DialPad';
 import CallingView from './phone/CallingView';
 import InCallView from './phone/InCallView';
 import AutoCallView from './phone/AutoCallView';
-
-const { Text } = Typography;
+import RegistrationStatus from '@/components/index/components/phone/RegistrationStatus';
 
 const MOUSE_THROTTLE_MS = 2000;
 
@@ -67,6 +66,14 @@ const PhoneCall: React.FC = () => {
     });
   }, [dispatch]);
 
+  // If any connection step fails, transition back to connection screen
+  useEffect(() => {
+    const failed = connSteps.some((s) => s.status === 'failed');
+    if (failed && connReady) {
+      dispatch(setConnReady(false));
+    }
+  }, [connSteps, connReady, dispatch]);
+
   // ─── Manual call handler ──────────────────────────────────────────────────
   const handleManualCall = useCallback((number: string) => {
     // 立即在前端进入“呼叫中”状态以提供即时的界面回馈，避免界面在拨号盘上卡顿
@@ -105,8 +112,20 @@ const PhoneCall: React.FC = () => {
       }
       AppBridge.Connect().catch((err: any) => {
         console.error('[PhoneCall] Connect failed:', err);
-        // 如果在连通过程中发生错误（如分机未分配/禁用），直接清理会话，跳转回登录页直接进行报错提示
         let msg = err?.message || String(err);
+        
+        // Determine if it is a transient network error
+        const isNetworkError = msg.includes('refused') || 
+                               msg.includes('timeout') || 
+                               msg.includes('Network Error') || 
+                               msg.includes('dial tcp');
+                               
+        if (isNetworkError) {
+          // Do NOT log out. Let the connection steps screen show the error, and user can retry.
+          return;
+        }
+
+        // For business-level failures (e.g. extension disabled), log out and redirect to login
         msg = msg.replace(/^api error:\s*/i, '');
         msg = msg.replace(/^Error:\s*/i, '');
         msg = msg.replace(/^分机校验失败:\s*/i, '');
@@ -139,11 +158,23 @@ const PhoneCall: React.FC = () => {
 
     EventsOn('sip:disconnected', () => {
       dispatch(setSipStatus('disconnected'));
+      dispatch(setConnReady(false)); // Transition to connection screen
       CallBridge.RetryConnection().catch(() => {});
     });
 
     EventsOn('sip:failed', () => {
       dispatch(setSipStatus('failed'));
+    });
+
+    // ── WebSocket events ──────────────────────────────────────────────────
+    EventsOn('ws:status', (status: string) => {
+      dispatch(setWsStatus(status));
+    });
+
+    EventsOn('ws:disconnected', () => {
+      dispatch(setWsStatus('disconnected'));
+      dispatch(setConnReady(false)); // Transition to connection screen
+      CallBridge.RetryConnection().catch(() => {});
     });
 
     // ── Call lifecycle events ─────────────────────────────────────────────
@@ -242,6 +273,7 @@ const PhoneCall: React.FC = () => {
       const events = [
         'conn:step', 'conn:ready',
         'sip:registered', 'sip:disconnected', 'sip:failed',
+        'ws:status', 'ws:disconnected',
         'call:progress', 'call:ring', 'call:answered', 'call:confirmed',
         'call:ended', 'call:failed', 'call:tick',
         'ws:callPhone', 'ws:taskStatus',
@@ -251,36 +283,9 @@ const PhoneCall: React.FC = () => {
     };
   }, [dispatch, inactivityDurationSec, handleMouseMove, navigate, token, userInfo]);
 
-  // ─── Derive connection error from steps ────────────────────────────────────
-  const connError = useMemo(() => {
-    const failed = connSteps.find((s) => s.status === 'failed');
-    return failed?.error || null;
-  }, [connSteps]);
-
   // ─── Render ───────────────────────────────────────────────────────────────
   if (!connReady) {
-    return (
-      <div style={connStyles.container}>
-        {connError ? (
-          <>
-            <Text style={connStyles.errorText}>{connError}</Text>
-            <Button
-              type="primary"
-              icon={<ReloadOutlined />}
-              onClick={retryConnection}
-              style={connStyles.retryBtn}
-            >
-              重试连接
-            </Button>
-          </>
-        ) : (
-          <>
-            <LoadingOutlined style={connStyles.spinner} spin />
-            <Text style={connStyles.loadingText}>正在安全连通中枢...</Text>
-          </>
-        )}
-      </div>
-    );
+    return <RegistrationStatus steps={connSteps} onRetry={retryConnection} />;
   }
 
   if (callState === 'idle') {

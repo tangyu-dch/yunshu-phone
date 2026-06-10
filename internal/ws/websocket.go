@@ -95,6 +95,25 @@ func DefaultConfig() Config {
 	}
 }
 
+// ReconnectStrategy is a function that returns the next reconnect delay given the attempt #
+type ReconnectStrategy func(attempt int) time.Duration
+
+// ExponentialBackoff returns a ReconnectStrategy that implements exponential backoff with jitter
+func ExponentialBackoff(baseInterval time.Duration, maxInterval time.Duration) ReconnectStrategy {
+	return func(attempt int) time.Duration {
+		if attempt <= 0 {
+			return baseInterval
+		}
+		// 2^attempt but cap at maxInterval
+		multiplier := 1 << attempt
+		delay := baseInterval * time.Duration(multiplier)
+		if delay > maxInterval {
+			delay = maxInterval
+		}
+		return delay
+	}
+}
+
 // MessageHandler is called for each incoming message
 type MessageHandler func(msg Message)
 
@@ -121,6 +140,7 @@ type Client struct {
 	// Reconnection
 	reconnectAttempts int
 	closed            bool
+	reconnectStrategy ReconnectStrategy
 }
 
 // NewClient creates a new WebSocket client
@@ -128,7 +148,15 @@ func NewClient(cfg Config) *Client {
 	return &Client{
 		cfg:     cfg,
 		closeCh: make(chan struct{}),
+		reconnectStrategy: ExponentialBackoff(cfg.ReconnectInterval, 2*time.Minute),
 	}
+}
+
+// SetReconnectStrategy sets the reconnection strategy
+func (c *Client) SetReconnectStrategy(strategy ReconnectStrategy) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.reconnectStrategy = strategy
 }
 
 // SetMessageHandler sets the handler for incoming messages
@@ -358,17 +386,27 @@ func (c *Client) handleDisconnect() {
 
 func (c *Client) reconnectLoop() {
 	for c.reconnectAttempts < c.cfg.MaxReconnectAttempts {
+		// 计算当前延迟
+		c.mu.Lock()
+		strategy := c.reconnectStrategy
+		if strategy == nil {
+			strategy = ExponentialBackoff(c.cfg.ReconnectInterval, 2*time.Minute)
+		}
+		c.mu.Unlock()
+		delay := strategy(c.reconnectAttempts)
+
+		if c.cfg.Debug {
+			log.Printf("[WS] Reconnect attempt %d/%d in %s",
+				c.reconnectAttempts+1, c.cfg.MaxReconnectAttempts, delay)
+		}
+
 		select {
 		case <-c.closeCh:
 			return
-		case <-time.After(c.cfg.ReconnectInterval):
+		case <-time.After(delay):
 		}
 
 		c.reconnectAttempts++
-		if c.cfg.Debug {
-			log.Printf("[WS] Reconnect attempt %d/%d", c.reconnectAttempts, c.cfg.MaxReconnectAttempts)
-		}
-
 		if err := c.Connect(); err == nil {
 			return
 		}

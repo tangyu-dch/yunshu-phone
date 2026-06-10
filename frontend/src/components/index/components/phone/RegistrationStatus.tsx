@@ -25,21 +25,21 @@ function getStepVisual(status: string): {
   switch (status) {
     case 'loading':
       return {
-        bg: '#e0e7ff', // soft indigo
-        icon: <LoadingOutlined style={{ color: '#4f46e5', fontSize: 15 }} spin />,
-        nameColor: '#4f46e5',
+        bg: 'rgba(99, 102, 241, 0.15)', // semi-transparent indigo
+        icon: <LoadingOutlined style={{ color: '#818cf8', fontSize: 15 }} spin />,
+        nameColor: '#818cf8',
         className: 'step-pulsing-loading',
       };
     case 'success':
       return {
-        bg: '#d1fae5', // soft emerald green
+        bg: 'rgba(16, 185, 129, 0.15)', // semi-transparent emerald green
         icon: <CheckCircleFilled style={{ color: '#10b981', fontSize: 15 }} />,
-        nameColor: '#1f2937',
+        nameColor: '#e2e8f0', // soft white-grey
         className: 'step-glowing-success',
       };
     case 'failed':
       return {
-        bg: '#fee2e2', // soft rose red
+        bg: 'rgba(239, 68, 68, 0.15)', // semi-transparent rose red
         icon: <CloseCircleFilled style={{ color: '#ef4444', fontSize: 15 }} />,
         nameColor: '#ef4444',
         className: 'step-glowing-failed',
@@ -47,9 +47,9 @@ function getStepVisual(status: string): {
     default:
       // pending
       return {
-        bg: '#f3f4f6', // soft grey
-        icon: <ClockCircleOutlined style={{ color: '#9ca3af', fontSize: 13 }} />,
-        nameColor: '#9ca3af',
+        bg: 'rgba(255, 255, 255, 0.04)', // translucent grey
+        icon: <ClockCircleOutlined style={{ color: 'rgba(255, 255, 255, 0.35)', fontSize: 13 }} />,
+        nameColor: 'rgba(255, 255, 255, 0.35)',
         className: '',
       };
   }
@@ -110,7 +110,7 @@ const RegistrationStatus: React.FC<RegistrationStatusProps> = ({ steps, onRetry 
                   style={{
                     ...styles.connector,
                     background:
-                      step.status === 'success' ? '#10b981' : '#e5e7eb',
+                      step.status === 'success' ? '#10b981' : 'rgba(255, 255, 255, 0.08)',
                     boxShadow: step.status === 'success' ? '0 0 4px rgba(16,185,129,0.2)' : 'none',
                   }}
                 />
@@ -170,19 +170,19 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    padding: '36px 20px',
+    padding: '48px 20px',
     fontFamily: "'Outfit', 'Inter', sans-serif",
   },
   title: {
     fontSize: 16,
     fontWeight: 700,
-    color: '#111827',
+    color: '#ffffff',
     marginBottom: 4,
     letterSpacing: '0.5px',
   },
   subtitle: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: 'rgba(255, 255, 255, 0.45)',
     marginBottom: 36,
   },
   stepsContainer: {
@@ -204,7 +204,7 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'center',
     flexShrink: 0,
     marginRight: 14,
-    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4)',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)',
     transition: 'all 0.25s ease',
   },
   stepContent: {
@@ -229,7 +229,7 @@ const styles: Record<string, React.CSSProperties> = {
     top: 30,
     width: 2,
     height: 28,
-    background: '#e5e7eb',
+    background: 'rgba(255, 255, 255, 0.08)',
     transition: 'background 0.3s ease',
   },
   retryWrapper: {

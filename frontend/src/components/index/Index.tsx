@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { Tabs, Modal, Typography, Space } from 'antd';
 import {
@@ -37,6 +37,39 @@ const Index: React.FC = () => {
     (s: RootState) => s.user.userInfo?.roleDetail?.permissions ?? []
   );
   const isAutoCall = useSelector((s: RootState) => s.app.isAutoCall);
+  const wsStatus = useSelector((s: RootState) => s.app.wsStatus);
+  const sipStatus = useSelector((s: RootState) => s.app.sipStatus);
+  const connReady = useSelector((s: RootState) => s.app.connReady);
+
+  const banner = useMemo(() => {
+    if (!connReady) return null;
+    
+    if (wsStatus === 'reconnecting') {
+      return {
+        type: 'warning',
+        text: '⚠️ 控制通道已断开，正在尝试重连，自动外呼和部分功能可能暂时受阻...',
+        bg: 'linear-gradient(135deg, rgba(245, 158, 11, 0.75) 0%, rgba(217, 119, 6, 0.75) 100%)',
+        border: '1px solid rgba(245, 158, 11, 0.25)',
+      };
+    }
+    if (wsStatus === 'disconnected' || wsStatus === 'error') {
+      return {
+        type: 'error',
+        text: '❌ 控制中枢 (WS) 连接已断开，自动外呼已暂停。请检查网络，或在拨号盘重试连接。',
+        bg: 'linear-gradient(135deg, rgba(239, 68, 68, 0.75) 0%, rgba(220, 38, 38, 0.75) 100%)',
+        border: '1px solid rgba(239, 68, 68, 0.25)',
+      };
+    }
+    if (sipStatus === 'disconnected' || sipStatus === 'failed') {
+      return {
+        type: 'error',
+        text: '❌ 电话服务通道 (SIP) 已断开，您当前无法拨打/接听电话。系统正在自动重连...',
+        bg: 'linear-gradient(135deg, rgba(239, 68, 68, 0.75) 0%, rgba(220, 38, 38, 0.75) 100%)',
+        border: '1px solid rgba(239, 68, 68, 0.25)',
+      };
+    }
+    return null;
+  }, [connReady, wsStatus, sipStatus]);
 
   const [activeTab, setActiveTab] = useState<string>(TAB_PHONE);
   const [inactivityModalVisible, setInactivityModalVisible] = useState(false);
@@ -121,6 +154,30 @@ const Index: React.FC = () => {
 
       <Header />
 
+      {banner && (
+        <div 
+          style={{
+            margin: '0 16px 8px',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            background: banner.bg,
+            border: banner.border,
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            animation: 'banner-pulse 2.2s infinite ease-in-out',
+            zIndex: 5,
+          }}
+        >
+          <span style={{ color: '#ffffff', fontSize: '12px', fontWeight: 500, letterSpacing: '0.2px', textAlign: 'center' }}>
+            {banner.text}
+          </span>
+        </div>
+      )}
+
       <div style={{ flex: 1, overflow: 'hidden', padding: '0 16px' }} className="no-drag">
         <Tabs
           activeKey={activeTab}
@@ -187,5 +244,16 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: "'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
   },
 };
+
+// Inject keyframes for warning banner pulse
+const styleSheet = document.createElement('style');
+styleSheet.textContent = `
+@keyframes banner-pulse {
+  0% { opacity: 0.95; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(0.997); }
+  100% { opacity: 0.95; transform: scale(1); }
+}
+`;
+document.head.appendChild(styleSheet);
 
 export default Index;

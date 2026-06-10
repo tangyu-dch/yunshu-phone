@@ -173,6 +173,7 @@ type PJSIPPhone struct {
 	reconnectCount int
 	initVersion    int
 	pjsipCh        chan pjsipReq // dedicated OS thread for all PJSIP CGo calls
+	regEventChan   chan RegStatus // 通知注册状态变化的channel
 }
 
 // NewPJSIPPhone creates a new PJSIP phone instance.
@@ -185,6 +186,7 @@ func NewPJSIPPhone() *PJSIPPhone {
 		callState:    CallIdle,
 		maxReconnect: 5,
 		pjsipCh:      make(chan pjsipReq, 1),
+		regEventChan: make(chan RegStatus, 1), // 带缓冲
 	}
 	go p.pjsipWorker()
 	return p
@@ -578,6 +580,13 @@ func (p *PJSIPPhone) SetRegCallbacks(cb RegCallbacks) {
 // callback. Must be called with p.mu already held.
 func (p *PJSIPPhone) setRegStatusLocked(s RegStatus) {
 	p.regStatus = s
+
+	// 发送事件到regEventChan，用于等待注册完成的地方
+	select {
+	case p.regEventChan <- s:
+	default: // 非阻塞发送，channel已有缓冲
+	}
+
 	switch s {
 	case RegConnecting:
 		if p.regCb.OnConnecting != nil {
@@ -601,6 +610,11 @@ func (p *PJSIPPhone) setRegStatusLocked(s RegStatus) {
 			go p.regCb.OnRegistrationFailed(0, "registration failed")
 		}
 	}
+}
+
+// RegChan 返回用于等待注册事件的channel
+func (p *PJSIPPhone) RegChan() <-chan RegStatus {
+	return p.regEventChan
 }
 
 // ---------------------------------------------------------------------------
